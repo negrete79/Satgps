@@ -1,38 +1,23 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Onde está o LG</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>body{margin:0;font-family:sans-serif} #map{height:100vh} #info{position:absolute;top:10px;left:10px;right:10px;z-index:999;background:#fff;padding:10px;border-radius:10px;text-align:center;font-weight:bold;box-shadow:0 2px 10px #0003}</style>
+<style>html,body{margin:0;height:100%} #map{height:100vh;width:100vw}</style>
 </head>
 <body>
-<div id="info">📡 Buscando LG...</div>
 <div id="map"></div>
 <script>
-const SUPA_URL = "https://jpaflbkafupwqfqfcjrv.supabase.co";
-const SUPA_KEY = "sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
-const map = L.map('map').setView([-20.3881,-43.7569], 17);
+const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
+const map=L.map('map').setView([-20.3881,-43.7569],18);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(map);
-let marker = null;
-
-async function busca(){
-  const r = await fetch(`${SUPA_URL}/rest/v1/rastreador?device_id=eq.LG&select=*&order=updated_at.desc&limit=1`,{
-    headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}
-  });
-  const d = await r.json();
-  if(d[0]){
-    const {lat,lng,updated_at} = d[0];
-    if(!marker){ marker = L.marker([lat,lng]).addTo(map); } 
-    else { marker.setLatLng([lat,lng]); }
-    map.setView([lat,lng], 18);
-    document.getElementById('info').innerHTML = `✅ LG AO VIVO<br>${lat.toFixed(6)}, ${lng.toFixed(6)}<br><small>${new Date(updated_at).toLocaleString('pt-BR')}</small><br><a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">Abrir no Google Maps</a>`;
-  }
+let m=L.marker([-20.3881,-43.7569]).addTo(map);
+async function up(){
+  const r=await fetch(`${U}/rest/v1/rastreador?device_id=eq.LG&order=updated_at.desc&limit=1`,{headers:{apikey:K,Authorization:"Bearer "+K}});
+  const d=await r.json(); if(d[0]){ m.setLatLng([d[0].lat,d[0].lng]); map.setView([d[0].lat,d[0].lng],18); }
 }
-busca();
-setInterval(busca, 3000);
+up(); setInterval(up,3000);
 </script>
 </body>
 </html>
