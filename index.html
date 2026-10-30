@@ -4,33 +4,43 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GPS Teste</title>
-<style>body{font-family:sans-serif;padding:20px} button{padding:15px 25px;font-size:18px} #log{margin-top:20px;white-space:pre-wrap;background:#eee;padding:10px}</style>
+<style>body{font-family:sans-serif;padding:20px} button{padding:20px;font-size:20px;width:100%;background:#4CAF50;color:white;border:none;border-radius:8px} #log{margin-top:20px;background:#eee;padding:10px;font-size:16px;min-height:100px;word-break:break-all}</style>
 </head>
 <body>
 <h2>Teste de Envio GPS</h2>
-<button onclick="iniciar()">📍 ATIVAR E PERMITIR LOCALIZAÇÃO</button>
+<button id="btn">📍 ATIVAR E PERMITIR LOCALIZAÇÃO</button>
 <div id="log">Aguardando clique...</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-const URL="https://zrghmwdzxslpuyglsvnq.supabase.co";
-const KEY="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
-const sb=supabase.createClient(URL,KEY);
+const URL_SUPABASE = "https://zrghmwdzxslpuyglsvnq.supabase.co/rest/v1/rastreador";
+const KEY = "sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
 const logEl = document.getElementById('log');
+function log(t){ logEl.innerHTML = new Date().toLocaleTimeString() + " - " + t + "<br>" + logEl.innerHTML; }
 
-function log(t){ logEl.textContent = new Date().toLocaleTimeString() + " - " + t + "\n" + logEl.textContent; }
-
-async function iniciar(){
-  log("Pedindo permissão...");
-  navigator.geolocation.watchPosition(async p=>{
-    const lat=p.coords.latitude, lng=p.coords.longitude;
-    log(`Posição: ${lat}, ${lng} - Enviando...`);
-    const {error}=await sb.from('rastreador').upsert({device_id:'LG',lat,lng,updated_at:new Date().toISOString()},{onConflict:'device_id'});
-    if(error) log("ERRO Supabase: "+error.message); else log("ENVIADO com sucesso!");
-  }, e=>{
-    log("ERRO GPS: "+e.message+" - Ative o GPS do celular e dê permissão de Localização nas configurações do Chrome");
-  }, {enableHighAccuracy:true});
-}
+document.getElementById('btn').addEventListener('click', function(){
+  log("Botão clicado! Pedindo GPS...");
+  if(!navigator.geolocation){ log("ERRO: Navegador não tem GPS"); return; }
+  
+  navigator.geolocation.watchPosition(async function(p){
+    const lat = p.coords.latitude;
+    const lng = p.coords.longitude;
+    log("Achou GPS: " + lat + ", " + lng);
+    
+    try{
+      const res = await fetch(URL_SUPABASE, {
+        method: "POST",
+        headers: { "apikey": KEY, "Authorization": "Bearer "+KEY, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
+        body: JSON.stringify({device_id:"LG", lat:lat, lng:lng, updated_at:new Date().toISOString()})
+      });
+      const txt = await res.text();
+      if(res.ok){ log("ENVIADO COM SUCESSO!"); } else { log("ERRO Supabase: " + res.status + " " + txt); }
+    }catch(err){ log("ERRO de rede: " + err.message); }
+  }, function(e){
+    log("ERRO GPS: " + e.message + " (Código "+e.code+") - Vai nas configurações do Android > Apps > Chrome > Permissões > Localização e deixa Permitir");
+  }, {enableHighAccuracy:true, timeout:15000, maximumAge:0});
+  
+  log("Aguardando sinal de satélite... deixa o celular perto da janela");
+});
 </script>
 </body>
 </html>
