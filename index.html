@@ -6,8 +6,6 @@
 <title>Carro GPS</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link rel="manifest" href="manifest.json?v=6">
-<meta name="theme-color" content="#000000">
 <style>
 html,body{margin:0;height:100%;background:#000}
 #map{height:100vh;width:100vw;background:#000}
@@ -27,61 +25,41 @@ html,body{margin:0;height:100%;background:#000}
 </head>
 <body>
 <div id="map"></div>
-
 <div id="selector" class="glass">
 <button id="btn1" class="ativo" onclick="trocar('Palio1')">PALIO 1</button>
 <button id="btn2" onclick="trocar('Palio2')">PALIO 2</button>
 </div>
-
 <div id="menuBtn" class="glass" onclick="toggleMenu()">⋮</div>
 <div id="menu" class="glass">
 <button id="mHist" onclick="toggleHist();toggleMenu()">🚫 HISTÓRICO: OFF</button>
 <button onclick="zerar();toggleMenu()" style="color:#550000">🗑️ ZERAR HISTÓRICO</button>
 </div>
-
 <button id="followBtn" class="glass" onclick="voltar()">📍 VOLTAR AO CARRO</button>
-
 <div id="box" class="glass">
 <div style="color:#666">🟢 <span id="nome" style="color:#888">PALIO 1</span> - <span id="qtd">0</span> pts</div>
 <a id="gmap" href="#" target="_blank">IR PARA O GOOGLE MAPS</a>
 <div id="credito">Crédito criado por Elias Costa NEGRET'S</div>
 </div>
-
 <script>
 const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
 let ATUAL="Palio1", seguir=true, primeiro=true, verHist=false, menuAberto=false;
 const sat = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:20});
-const rua = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19});
+const rua = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
 const map = L.map('map',{layers:[sat], zoomControl:false}).setView([-20.3881,-43.7569],17);
 L.control.layers({"🛰️ SATÉLITE": sat, "🌑 ESCURO": rua},{},{position:'topleft'}).addTo(map);
 let m=L.marker([-20.3881,-43.7569]).addTo(map);
 let poly=L.polyline([],{color:'#ff0000',weight:3,opacity:0.6});
-
 function toggleMenu(){menuAberto=!menuAberto;document.getElementById('menu').style.display=menuAberto?'flex':'none';}
 function toggleHist(){
   verHist=!verHist;
-  if(verHist){
-    poly.addTo(map);
-    document.getElementById('mHist').innerText='👁️ HISTÓRICO: ON';
-  }else{
-    map.removeLayer(poly);
-    document.getElementById('mHist').innerText='🚫 HISTÓRICO: OFF';
-  }
+  if(verHist){poly.addTo(map);document.getElementById('mHist').innerText='👁️ HISTÓRICO: ON';}
+  else{map.removeLayer(poly);document.getElementById('mHist').innerText='🚫 HISTÓRICO: OFF';}
 }
-
 map.on('dragstart',()=>{if(seguir){seguir=false;document.getElementById('followBtn').style.display='block';}});
 map.on('click',()=>{if(menuAberto)toggleMenu();});
 function voltar(){seguir=true;primeiro=true;document.getElementById('followBtn').style.display='none';map.flyTo(m.getLatLng(),17,{duration:1.8});}
 function trocar(c){ATUAL=c;document.getElementById('btn1').className=c=='Palio1'?'ativo':'';document.getElementById('btn2').className=c=='Palio2'?'ativo':'';document.getElementById('nome').innerText=c.toUpperCase();poly.setLatLngs([]);primeiro=true;seguir=true;document.getElementById('followBtn').style.display='none';up()}
-
-async function zerar(){
-  if(!confirm(`Zerar histórico do ${ATUAL}?`)) return;
-  let f=ATUAL=='Palio1'?`device_id=in.(Palio1,LG)`:`device_id=eq.${ATUAL}`;
-  await fetch(`${U}/rest/v1/rastreador_historico?${f}`,{method:'DELETE',headers:{apikey:K,Authorization:"Bearer "+K}});
-  poly.setLatLngs([]);
-  document.getElementById('qtd').innerText='0';
-}
-
+async function zerar(){if(!confirm(`Zerar histórico do ${ATUAL}?`)) return;let f=ATUAL=='Palio1'?`device_id=in.(Palio1,LG)`:`device_id=eq.${ATUAL}`;await fetch(`${U}/rest/v1/rastreador_historico?${f}`,{method:'DELETE',headers:{apikey:K,Authorization:"Bearer "+K}});poly.setLatLngs([]);document.getElementById('qtd').innerText='0';}
 async function up(){
   let ids=ATUAL=='Palio1'?`device_id=in.(Palio1,LG)`:`device_id=eq.${ATUAL}`;
   try{
@@ -94,17 +72,13 @@ async function up(){
     if(h.length){
       poly.setLatLngs(h.map(x=>[x.lat,x.lng]));
       document.getElementById('qtd').innerText=h.length;
-      // Só adiciona no mapa se o histórico estiver ligado
       if(verHist && !map.hasLayer(poly)) poly.addTo(map);
       if(primeiro){map.setView([d[0].lat,d[0].lng],17);primeiro=false;}
       else if(seguir){map.panTo([d[0].lat,d[0].lng]);}
     }
   }catch(e){}
 }
-setTimeout(()=>map.invalidateSize(),500);
-up();
-setInterval(up,10000);
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=6');}
+setTimeout(()=>map.invalidateSize(),500);up();setInterval(up,10000);
 </script>
 </body>
 </html>
