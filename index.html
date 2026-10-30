@@ -1,37 +1,58 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#000000">
-<title>Relogio</title>
-<link rel="manifest" href="manifest-clock.json">
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#000000"><title>Frota Palio GPS</title>
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-html,body{margin:0;height:100%;background:#000;overflow:hidden}
-body{display:flex;align-items:center;justify-content:center;flex-direction:column}
-#h{font-size:62px;color:#151515;font-family:monospace;letter-spacing:4px}
-#s{font-size:13px;color:#222;margin-top:8px}
-body.ativo #h{color:#1a1a1a}
-body.ativo #s{color:#111}
+html,body{margin:0;height:100%}#map{height:100vh;width:100vw}
+.glass{background:#00000040;color:#fff;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #ffffff26;border-radius:22px}
+#box{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:999;padding:12px 20px;text-align:center;font-family:system-ui,sans-serif;min-width:280px}
+#box #st{font-weight:700;font-size:13px}
+#box a{color:#fff;text-decoration:none;display:block;margin-top:6px;font-size:12px;opacity:0.85}
+#box a b{text-decoration:underline;text-underline-offset:4px}
+#credito{margin-top:8px;font-size:10px;opacity:0.45;letter-spacing:1px;text-transform:uppercase}
+#selector{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:999;padding:8px 10px;display:flex;gap:8px}
+#selector button{padding:9px 18px;border-radius:12px;border:1px solid #ffffff26;background:#ffffff14;color:#fff;font-weight:700;font-size:12px;cursor:pointer}
+#selector button.ativo{background:#fff;color:#000;box-shadow:0 4px 15px #ffffff40}
+#followBtn{position:absolute;top:85px;left:12px;z-index:999;padding:10px 16px;font-weight:600;font-size:13px;display:none}
+.leaflet-control-zoom a{background:#00000040!important;color:#fff!important;border:1px solid #ffffff26!important;backdrop-filter:blur(10px)}
 </style>
-</head>
-<body>
-<div id="h">--:--</div>
-<div id="s">⏰ toque para ativar</div>
+</head><body>
+<div id="map"></div>
+<div id="selector" class="glass">
+<button id="btnPalio1" class="ativo" onclick="trocar('Palio1')">PALIO 1</button>
+<button id="btnPalio2" onclick="trocar('Palio2')">PALIO 2</button>
+</div>
+<button id="followBtn" class="glass">📍 VOLTAR PRO CARRO</button>
+<div id="box" class="glass">
+<div id="st">🟢 <span id="nomeCarro">PALIO 1</span> ONLINE</div>
+<a id="gmap" href="#" target="_blank"><b>IR PARA O GOOGLE MAPS</b></a>
+<div id="credito">Crédito criado por Elias Costa NEGRET'S</div>
+</div>
 <script>
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
 const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
-function clock(){ document.getElementById('h').innerText=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
-setInterval(clock,1000); clock();
-document.body.onclick=async ()=>{
-  document.body.classList.add('ativo');
-  document.getElementById('s').innerText="● ativo";
-  try{ await document.documentElement.requestFullscreen(); }catch(e){}
-  try{ if(navigator.wakeLock) await navigator.wakeLock.request('screen'); }catch(e){}
-  navigator.geolocation.watchPosition(async p=>{
-    await fetch(`${U}/rest/v1/rastreador`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify({device_id:"LG",lat:p.coords.latitude,lng:p.coords.longitude,updated_at:new Date().toISOString()})});
-  },()=>{}, {enableHighAccuracy:true});
+let CARRO_ATUAL="Palio1";
+const map=L.map('map').setView([-20.3881,-43.7569],18);
+const rua=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18});
+L.control.layers({"🗺️ Rua":rua,"🛰️ Satélite":sat}).addTo(map);
+let m=L.marker([-20.3881,-43.7569]).addTo(map);
+let seguir=true;
+map.on('dragstart',()=>{ if(seguir){ seguir=false; document.getElementById('followBtn').style.display='block'; } });
+document.getElementById('followBtn').onclick=()=>{
+  map.flyTo(m.getLatLng(),18,{animate:true,duration:1.2});
+  seguir=true; document.getElementById('followBtn').style.display='none';
 };
-</script>
-</body>
-</html>
+function trocar(nome){
+ CARRO_ATUAL=nome;
+ document.getElementById('btnPalio1').className=nome=='Palio1'?'ativo':'';
+ document.getElementById('btnPalio2').className=nome=='Palio2'?'ativo':'';
+ document.getElementById('nomeCarro').innerText=nome.toUpperCase();
+ seguir=true; up();
+}
+async function up(){
+ const r=await fetch(`${U}/rest/v1/rastreador?device_id=eq.${CARRO_ATUAL}&order=updated_at.desc&limit=1`,{headers:{apikey:K,Authorization:"Bearer "+K}});
+ const d=await r.json(); if(d[0]){ m.setLatLng([d[0].lat,d[0].lng]); if(seguir) map.panTo([d[0].lat,d[0].lng]); document.getElementById('gmap').href=`https://www.google.com/maps?q=${d[0].lat},${d[0].lng}`; }
+}
+up(); setInterval(up,5000);
+</script></body></html>
