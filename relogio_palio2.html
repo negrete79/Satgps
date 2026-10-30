@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Palio 2 - Relogio Clima</title>
+<title>Palio 2</title>
 <style>
 html,body{margin:0;height:100%;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:monospace}
 #h{font-size:70px;font-weight:bold;color:#050505}
@@ -18,42 +18,15 @@ html,body{margin:0;height:100%;background:#000;display:flex;align-items:center;j
 <div id="temp">toque na tela</div>
 <div id="d">--/--</div>
 <script>
-const U="https://jpaflbkafupwqfqfcjrv.supabase.co";
-const K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
+const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
 function clock(){document.getElementById('h').innerText=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});document.getElementById('d').innerText=new Date().toLocaleDateString('pt-BR');}
 setInterval(clock,1000);clock();
-async function buscaClima(lat,lon){
-  try{
-    const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
-    const j=await r.json();
-    const t=Math.round(j.current_weather.temperature);
-    const c=j.current_weather.weathercode;
-    const hora=new Date().getHours(); const dia=hora>=6&&hora<18;
-    let icon="☁️";
-    if(c==0||c==1) icon=dia?"☀️":"🌙";
-    else if(c==2) icon=dia?"⛅":"☁️";
-    else if(c==3) icon="☁️";
-    else if(c>=45&&c<=82) icon="🌧️";
-    else if(c>=95) icon="⛈️";
-    document.getElementById('clima').innerText=icon+" "+t+"°C";
-  }catch(e){}
-}
+async function buscaClima(lat,lon){try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);const j=await r.json();const t=Math.round(j.current_weather.temperature);const c=j.current_weather.weathercode;const hora=new Date().getHours();const dia=hora>=6&&hora<18;let icon="☁️";if(c==0||c==1)icon=dia?"☀️":"🌙";else if(c==2)icon=dia?"⛅":"☁️";else if(c==3)icon="☁️";else if(c>=45&&c<=82)icon="🌧️";else if(c>=95)icon="⛈️";document.getElementById('clima').innerText=icon+" "+t+"°C";}catch(e){}}
 let ultimoEnvio=0;
 document.body.onclick=()=>{
-  document.documentElement.requestFullscreen?.();
-  try{navigator.wakeLock.request('screen')}catch(e){}
-  const enviar=async(lat,lon)=>{
-    const agora=Date.now();
-    if(agora-ultimoEnvio<30000) return;
-    ultimoEnvio=agora;
-    buscaClima(lat,lon);
-    document.getElementById('temp').innerText=`salvo: ${new Date().toLocaleTimeString('pt-BR')}`;
-    await fetch(`${U}/rest/v1/rastreador`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify({device_id:"Palio2",lat:lat,lng:lon,updated_at:new Date().toISOString()})});
-    await fetch(`${U}/rest/v1/rastreador_historico`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},body:JSON.stringify({device_id:"Palio2",lat:lat,lng:lon})});
-  };
-  document.getElementById('temp').innerText="buscando...";
-  navigator.geolocation.getCurrentPosition(p=>enviar(p.coords.latitude,p.coords.longitude),null,{enableHighAccuracy:true});
-  navigator.geolocation.watchPosition(p=>enviar(p.coords.latitude,p.coords.longitude),null,{enableHighAccuracy:true, maximumAge:0});
+  document.documentElement.requestFullscreen?.();try{navigator.wakeLock.request('screen')}catch(e){}
+  const enviar=async(lat,lon)=>{const agora=Date.now();if(agora-ultimoEnvio<30000)return;ultimoEnvio=agora;buscaClima(lat,lon);document.getElementById('temp').innerText=`salvo: ${new Date().toLocaleTimeString('pt-BR')}`;await fetch(`${U}/rest/v1/rastreador`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify({device_id:"Palio2",lat:lat,lng:lon,updated_at:new Date().toISOString()})});await fetch(`${U}/rest/v1/rastreador_historico`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},body:JSON.stringify({device_id:"Palio2",lat:lat,lng:lon})});};
+  document.getElementById('temp').innerText="buscando...";navigator.geolocation.getCurrentPosition(p=>enviar(p.coords.latitude,p.coords.longitude),null,{enableHighAccuracy:true});navigator.geolocation.watchPosition(p=>enviar(p.coords.latitude,p.coords.longitude),null,{enableHighAccuracy:true, maximumAge:0});
 };
 </script>
 </body>
