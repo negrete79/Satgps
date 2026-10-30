@@ -6,7 +6,7 @@
 <title>Mapa Histórico</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>html,body,#map{margin:0;height:100%} .info{position:absolute;bottom:20px;left:10px;right:10px;background:#000000cc;color:#fff;padding:12px;border-radius:12px;font-family:monospace;z-index:999;text-align:center}</style>
+<style>html,body,#map{margin:0;height:100%} .info{position:absolute;bottom:20px;left:10px;right:10px;background:#000000dd;color:#fff;padding:12px;border-radius:12px;font-family:monospace;z-index:999;text-align:center}</style>
 </head>
 <body>
 <div id="map"></div>
@@ -14,29 +14,26 @@
 <script>
 const U="https://jpaflbkafupwqfqfcjrv.supabase.co";
 const K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
-const map=L.map('map').setView([-20.4,-43.8],15);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+const ruas = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});
+const satelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
+
+const map = L.map('map',{layers:[ruas]}).setView([-20.4,-43.8],14);
+L.control.layers({"Mapa":ruas,"Satélite":satelite}).addTo(map);
 
 async function carregar(){
-  // Pega ultimas 200 posições do histórico
-  const r=await fetch(`${U}/rest/v1/rastreador_historico?device_id=eq.LG&order=created_at.asc&limit=200`,{headers:{apikey:K,Authorization:"Bearer "+K}});
-  const dados=await r.json();
-  if(!dados.length){document.getElementById('info').innerText="Nenhum histórico ainda"; return;}
-  
+  const r=await fetch(`${U}/rest/v1/rastreador_historico?device_id=eq.LG&order=created_at.desc&limit=200`,{headers:{apikey:K,Authorization:"Bearer "+K}});
+  let dados=await r.json();
+  if(!dados.length){document.getElementById('info').innerText="Nenhum histórico ainda - deixa o rastreador aberto 2 min"; return;}
+  dados=dados.reverse();
   const latlngs=dados.map(d=>[d.lat,d.lng]);
-  // Linha do caminho
   L.polyline(latlngs,{color:'red',weight:4}).addTo(map);
-  // Marcador atual
   const atual=latlngs[latlngs.length-1];
   L.marker(atual).addTo(map).bindPopup("CARRO AGORA").openPopup();
   map.fitBounds(latlngs);
-  
-  const primeiro=new Date(dados[0].created_at).toLocaleString('pt-BR');
-  const ultimo=new Date(dados[dados.length-1].created_at).toLocaleString('pt-BR');
-  document.getElementById('info').innerHTML=`HISTÓRICO: ${dados.length} pontos<br>${primeiro} até ${ultimo}<br><a href="https://maps.google.com/?q=${atual[0]},${atual[1]}" target="_blank" style="color:#0f0">IR PARA GOOGLE MAPS</a>`;
+  document.getElementById('info').innerHTML=`HISTÓRICO: ${dados.length} pontos<br><a href="https://maps.google.com/?q=${atual[0]},${atual[1]}" target="_blank" style="color:#0f0">IR PARA GOOGLE MAPS</a> • Troca pra Satélite no canto`;
 }
 carregar();
-setInterval(carregar,30000);
 </script>
 </body>
 </html>
