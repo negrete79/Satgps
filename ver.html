@@ -1,45 +1,66 @@
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#000000"><title>Carro GPS</title>
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<title>Frota Palio GPS</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 html,body{margin:0;height:100%}#map{height:100vh;width:100vw}
-.glass{background:#00000040;color:#fff;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #ffffff26;border-radius:22px}
-#box{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:999;padding:12px 20px;text-align:center;font-family:system-ui,sans-serif;min-width:260px}
-#box #st{font-weight:700;font-size:13px;letter-spacing:0.3px}
-#box a{color:#fff;text-decoration:none;display:block;margin-top:6px;font-size:12px;opacity:0.85}
-#box a b{text-decoration:underline;text-underline-offset:4px}
-#credito{margin-top:8px;font-size:10px;opacity:0.45;letter-spacing:1px;text-transform:uppercase}
-#followBtn{position:absolute;top:85px;left:12px;z-index:999;padding:10px 16px;font-weight:600;font-size:13px;display:none;box-shadow:0 4px 20px #0000003d;animation:slideIn 0.3s ease}
-@keyframes slideIn{from{transform:translateX(-20px);opacity:0}to{transform:translateX(0);opacity:1}}
-.leaflet-control-zoom a{background:#00000040!important;color:#fff!important;border:1px solid #ffffff26!important;backdrop-filter:blur(10px)}
-.leaflet-control-layers{background:#00000040!important;backdrop-filter:blur(10px);border-radius:14px!important;border:1px solid #ffffff26!important;color:#fff}
+.glass{background:#00000025;color:#fff;backdrop-filter:blur(8px);border:1px solid #ffffff18;border-radius:22px}
+#box{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:999;padding:10px 18px;text-align:center;font-family:system-ui;min-width:280px;background:#00000020;border:1px solid #ffffff15}
+#selector{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:999;padding:6px;display:flex;gap:6px;background:#00000018;border:1px solid #ffffff12}
+#selector button{padding:8px 16px;border-radius:12px;border:1px solid #ffffff15;background:#ffffff0f;color:#fff;font-weight:700;font-size:11px;cursor:pointer;opacity:0.6}
+#selector button.ativo{background:#ffffffcc;color:#000;opacity:1}
+#followBtn{position:absolute;top:80px;left:10px;z-index:999;padding:8px 14px;font-size:11px;opacity:0.5;background:#00000018;border:1px solid #ffffff12}
+#zerarBtn{position:absolute;top:80px;right:10px;z-index:999;padding:8px 14px;font-size:11px;opacity:0.4;background:#ff000018;border:1px solid #ff000030;color:#ffaaaa}
 </style>
 </head><body>
 <div id="map"></div>
-<button id="followBtn" class="glass">📍 VOLTAR PRO CARRO</button>
+<div id="selector" class="glass">
+<button id="btn1" class="ativo" onclick="trocar('Palio1')">PALIO 1</button>
+<button id="btn2" onclick="trocar('Palio2')">PALIO 2</button>
+</div>
+<button id="followBtn" class="glass">📍 VOLTAR</button>
+<button id="zerarBtn" class="glass" onclick="zerar()">🗑️ ZERAR</button>
 <div id="box" class="glass">
-<div id="st">🟢 CARRO GPS ONLINE</div>
-<a id="gmap" href="#" target="_blank"><b>IR PARA O GOOGLE MAPS</b></a>
-<div id="credito">Criado por Elias Costa • NEGRET'S</div>
+<div id="st">🟢 <span id="nome">PALIO 1</span> - <span id="qtd">0</span> pontos</div>
+<a id="gmap" href="#" target="_blank"><b>ACESSE O GOOGLE MAPS</b></a>
+<div style="margin-top:6px;font-size:10px;opacity:0.6;letter-spacing:0.5px">Criado por Elias costa NEGRET'S</div>
 </div>
 <script>
 const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
-const map=L.map('map').setView([-20.3881,-43.7569],18);
-const rua=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+let ATUAL="Palio1";
 const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18});
-L.control.layers({"🗺️ Rua":rua,"🛰️ Satélite":sat}).addTo(map);
+const rua=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});
+const map=L.map('map',{layers:[sat]}).setView([-20.3881,-43.7569],18);
+L.control.layers({"🛰️ Satélite":sat,"🗺️ Rua":rua}).addTo(map);
 let m=L.marker([-20.3881,-43.7569]).addTo(map);
+let poly=L.polyline([],{color:'red',weight:4,opacity:0.8}).addTo(map);
 let seguir=true;
-map.on('dragstart',()=>{ if(seguir){ seguir=false; document.getElementById('followBtn').style.display='block'; } });
-document.getElementById('followBtn').onclick=()=>{
-  map.flyTo(m.getLatLng(), 18, {animate:true, duration:1.5, easeLinearity:0.2});
-  seguir=true; document.getElementById('followBtn').style.display='none';
-};
-async function up(){
- const r=await fetch(`${U}/rest/v1/rastreador?device_id=eq.LG&order=updated_at.desc&limit=1`,{headers:{apikey:K,Authorization:"Bearer "+K}});
- const d=await r.json(); if(d[0]){ m.setLatLng([d[0].lat,d[0].lng]); if(seguir) map.panTo([d[0].lat,d[0].lng],{animate:true,duration:1}); document.getElementById('gmap').href=`https://www.google.com/maps?q=${d[0].lat},${d[0].lng}`; }
+map.on('dragstart',()=>{seguir=false;document.getElementById('followBtn').style.display='block'});
+document.getElementById('followBtn').onclick=()=>{map.flyTo(m.getLatLng(),18,{duration:1});seguir=true;document.getElementById('followBtn').style.display='none'};
+function trocar(c){ATUAL=c;document.getElementById('btn1').className=c=='Palio1'?'ativo':'';document.getElementById('btn2').className=c=='Palio2'?'ativo':'';document.getElementById('nome').innerText=c.toUpperCase();poly.setLatLngs([]);up()}
+async function zerar(){
+ if(!confirm(`Zerar histórico do ${ATUAL}?`)) return;
+ let filtro = ATUAL=='Palio1' ? `device_id=in.(Palio1,LG)` : `device_id=eq.${ATUAL}`;
+ await fetch(`${U}/rest/v1/rastreador_historico?${filtro}`,{method:'DELETE',headers:{apikey:K,Authorization:"Bearer "+K}});
+ poly.setLatLngs([]); document.getElementById('qtd').innerText='0'; alert('Zerado!');
 }
-up(); setInterval(up,5000);
+async function buscaDevice(id){
+  let ids = id=='Palio1' ? `device_id=in.(Palio1,LG)` : `device_id=eq.${id}`;
+  let r=await fetch(`${U}/rest/v1/rastreador?${ids}&order=updated_at.desc&limit=1`,{headers:{apikey:K,Authorization:"Bearer "+K}});
+  let d=await r.json(); return d[0];
+}
+async function up(){
+ const d=await buscaDevice(ATUAL);
+ if(d){
+  m.setLatLng([d.lat,d.lng]);
+  if(seguir) map.setView([d.lat,d.lng],18);
+  document.getElementById('gmap').href=`https://www.google.com/maps?q=${d.lat},${d.lng}`;
+  let idsHist = ATUAL=='Palio1' ? `device_id=in.(Palio1,LG)` : `device_id=eq.${ATUAL}`;
+  const rh=await fetch(`${U}/rest/v1/rastreador_historico?${idsHist}&order=created_at.asc&limit=500`,{headers:{apikey:K,Authorization:"Bearer "+K}});
+  const h=await rh.json();
+  if(h.length){poly.setLatLngs(h.map(x=>[x.lat,x.lng]));document.getElementById('qtd').innerText=h.length}
+ }
+}
+up();setInterval(up,10000);
 </script></body></html>
