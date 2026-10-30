@@ -1,15 +1,14 @@
 {
   "name": "Carro GPS",
   "short_name": "Carro GPS",
-  "start_url": "./index.html?v=4",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
-  "icons": [
-    {
-      "src": "https://cdn-icons-png.flaticon.com/512/684/684908.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [{
+    "src": "https://cdn-icons-png.flaticon.com/512/3774/3774083.png",
+    "sizes": "512x512",
+    "type": "image/png",
+    "purpose": "any maskable"
+  }]
 }
