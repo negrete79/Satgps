@@ -1,0 +1,26 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Ver</title><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><style>html,body{margin:0} #map{height:100vh} .leaflet-control-layers{font-size:16px}</style></head><body><div id="map"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const sb=supabase.createClient("https://zrghmwdzxslpuyglsvnq.supabase.co","sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf");
+
+var rua = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'Rua'});
+var sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {attribution:'Satélite Esri'});
+var satNome = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+var rotulos = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}');
+
+var satComRua = L.layerGroup([satNome, rotulos]);
+
+var map=L.map('map', {layers:[sat]}).setView([-20.3855, -43.5035], 16);
+
+var baseMaps = {
+  "🛰️ SATÉLITE": sat,
+  "🛰️ SATÉLITE + Ruas": satComRua,
+  "🗺️ Mapa Rua": rua
+};
+L.control.layers(baseMaps).addTo(map);
+
+var m=L.marker([-20.3855,-43.5035]).addTo(map).bindPopup("LG");
+
+async function att(){let {data}=await sb.from('rastreador').select('*').eq('device_id','LG').single(); if(data){m.setLatLng([data.lat,data.lng]); map.setView([data.lat,data.lng]); m.setPopupContent(new Date(data.updated_at).toLocaleString())}} 
+setInterval(att,3000); att();
+</script></body></html>
