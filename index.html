@@ -6,21 +6,22 @@
 <title>Carro GPS</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="manifest" href="manifest.json?v=7">
+<meta name="theme-color" content="#ffffff">
 <style>
-html,body{margin:0;height:100%;background:#000}
-#map{height:100vh;width:100vw;background:#000}
-.glass{background:#000000cc;color:#aaa;backdrop-filter:blur(8px);border:1px solid #222;border-radius:22px}
+html,body{margin:0;height:100%;background:#fff}
+#map{height:100vh;width:100vw}
+.glass{background:#ffffffee;color:#222;backdrop-filter:blur(8px);border:1px solid #ddd;border-radius:22px;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
 #selector{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:999;padding:4px;display:flex;gap:5px}
-#selector button{padding:8px 14px;border-radius:12px;border:1px solid #222;background:#000;color:#555;font-weight:700;font-size:11px}
-#selector button.ativo{background:#111;color:#fff;border-color:#333}
-#menuBtn{position:absolute;top:12px;right:12px;z-index:1000;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#555}
-#menu{position:absolute;top:54px;right:12px;z-index:1000;padding:8px;display:none;flex-direction:column;gap:6px;min-width:170px;background:#000}
-#menu button{padding:10px 14px;border-radius:12px;border:1px solid #222;background:#000;color:#888;font-size:12px;text-align:left}
-#followBtn{position:absolute;bottom:110px;left:50%;transform:translateX(-50%);z-index:999;padding:12px 24px;font-size:11px;font-weight:700;display:none;background:#000!important;color:#888!important;border-color:#222!important}
-#box{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:999;padding:12px 20px;text-align:center;font-family:system-ui;min-width:280px;background:#000!important}
-#box a{color:#555;text-decoration:none;display:block;margin-top:6px;font-size:11px;font-weight:700}
-#credito{margin-top:8px;font-size:9px;opacity:0.3;color:#555}
-.leaflet-control-layers{background:#000!important;color:#555!important;border:1px solid #222!important;border-radius:12px!important}
+#selector button{padding:8px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;color:#666;font-weight:700;font-size:11px}
+#selector button.ativo{background:#000;color:#fff;border-color:#000}
+#menuBtn{position:absolute;top:12px;right:12px;z-index:1000;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#333}
+#menu{position:absolute;top:54px;right:12px;z-index:1000;padding:8px;display:none;flex-direction:column;gap:6px;min-width:180px;background:#fff}
+#menu button{padding:10px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;color:#333;font-size:12px;text-align:left}
+#followBtn{position:absolute;bottom:110px;left:50%;transform:translateX(-50%);z-index:999;padding:12px 24px;font-size:11px;font-weight:700;display:none}
+#box{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:999;padding:12px 20px;text-align:center;font-family:system-ui;min-width:280px}
+#box a{color:#000;text-decoration:none;display:block;margin-top:6px;font-size:12px;font-weight:700}
+#credito{margin-top:8px;font-size:9px;opacity:0.5}
 </style>
 </head>
 <body>
@@ -32,11 +33,11 @@ html,body{margin:0;height:100%;background:#000}
 <div id="menuBtn" class="glass" onclick="toggleMenu()">⋮</div>
 <div id="menu" class="glass">
 <button id="mHist" onclick="toggleHist();toggleMenu()">🚫 HISTÓRICO: OFF</button>
-<button onclick="zerar();toggleMenu()" style="color:#550000">🗑️ ZERAR HISTÓRICO</button>
+<button onclick="zerar();toggleMenu()" style="color:#c00">🗑️ ZERAR HISTÓRICO</button>
 </div>
 <button id="followBtn" class="glass" onclick="voltar()">📍 VOLTAR AO CARRO</button>
 <div id="box" class="glass">
-<div style="color:#666">🟢 <span id="nome" style="color:#888">PALIO 1</span> - <span id="qtd">0</span> pts</div>
+<div>🟢 <span id="nome">PALIO 1</span> - <span id="qtd">0</span> pts</div>
 <a id="gmap" href="#" target="_blank">IR PARA O GOOGLE MAPS</a>
 <div id="credito">Crédito criado por Elias Costa NEGRET'S</div>
 </div>
@@ -44,17 +45,13 @@ html,body{margin:0;height:100%;background:#000}
 const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
 let ATUAL="Palio1", seguir=true, primeiro=true, verHist=false, menuAberto=false;
 const sat = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:20});
-const rua = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
-const map = L.map('map',{layers:[sat], zoomControl:false}).setView([-20.3881,-43.7569],17);
-L.control.layers({"🛰️ SATÉLITE": sat, "🌑 ESCURO": rua},{},{position:'topleft'}).addTo(map);
+const rua = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{maxZoom:20});
+const map = L.map('map',{layers:[rua], zoomControl:false}).setView([-20.3881,-43.7569],17);
+L.control.layers({"🛰️ SATÉLITE": sat, "🗺️ RUA": rua},{},{position:'topleft'}).addTo(map);
 let m=L.marker([-20.3881,-43.7569]).addTo(map);
-let poly=L.polyline([],{color:'#ff0000',weight:3,opacity:0.6});
+let poly=L.polyline([],{color:'#ff0000',weight:3,opacity:0.7});
 function toggleMenu(){menuAberto=!menuAberto;document.getElementById('menu').style.display=menuAberto?'flex':'none';}
-function toggleHist(){
-  verHist=!verHist;
-  if(verHist){poly.addTo(map);document.getElementById('mHist').innerText='👁️ HISTÓRICO: ON';}
-  else{map.removeLayer(poly);document.getElementById('mHist').innerText='🚫 HISTÓRICO: OFF';}
-}
+function toggleHist(){verHist=!verHist;if(verHist){poly.addTo(map);document.getElementById('mHist').innerText='👁️ HISTÓRICO: ON';}else{map.removeLayer(poly);document.getElementById('mHist').innerText='🚫 HISTÓRICO: OFF';}}
 map.on('dragstart',()=>{if(seguir){seguir=false;document.getElementById('followBtn').style.display='block';}});
 map.on('click',()=>{if(menuAberto)toggleMenu();});
 function voltar(){seguir=true;primeiro=true;document.getElementById('followBtn').style.display='none';map.flyTo(m.getLatLng(),17,{duration:1.8});}
@@ -79,6 +76,7 @@ async function up(){
   }catch(e){}
 }
 setTimeout(()=>map.invalidateSize(),500);up();setInterval(up,10000);
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=7');}
 </script>
 </body>
 </html>
