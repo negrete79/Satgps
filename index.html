@@ -6,22 +6,35 @@
 <title>Carro GPS</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link rel="manifest" href="manifest.json?v=7">
-<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="manifest.json?v=8">
+<meta name="theme-color" content="#000000">
 <style>
-html,body{margin:0;height:100%;background:#fff}
+html,body{margin:0;height:100%;background:#000}
 #map{height:100vh;width:100vw}
-.glass{background:#ffffffee;color:#222;backdrop-filter:blur(8px);border:1px solid #ddd;border-radius:22px;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
-#selector{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:999;padding:4px;display:flex;gap:5px}
-#selector button{padding:8px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;color:#666;font-weight:700;font-size:11px}
-#selector button.ativo{background:#000;color:#fff;border-color:#000}
-#menuBtn{position:absolute;top:12px;right:12px;z-index:1000;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#333}
-#menu{position:absolute;top:54px;right:12px;z-index:1000;padding:8px;display:none;flex-direction:column;gap:6px;min-width:180px;background:#fff}
-#menu button{padding:10px 14px;border-radius:12px;border:1px solid #ddd;background:#fff;color:#333;font-size:12px;text-align:left}
-#followBtn{position:absolute;bottom:110px;left:50%;transform:translateX(-50%);z-index:999;padding:12px 24px;font-size:11px;font-weight:700;display:none}
-#box{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:999;padding:12px 20px;text-align:center;font-family:system-ui;min-width:280px}
-#box a{color:#000;text-decoration:none;display:block;margin-top:6px;font-size:12px;font-weight:700}
-#credito{margin-top:8px;font-size:9px;opacity:0.5}
+/* VIDRO FUMÊ */
+.glass{
+  background: rgba(20,20,20,0.45) !important;
+  backdrop-filter: blur(12px) saturate(1.5);
+  -webkit-backdrop-filter: blur(12px) saturate(1.5);
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  color:#fff !important;
+}
+#selector{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:999;padding:5px;display:flex;gap:6px;border-radius:22px}
+#selector button{padding:9px 15px;border-radius:15px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);font-weight:700;font-size:11px;backdrop-filter:blur(8px)}
+#selector button.ativo{background:rgba(0,0,0,0.7);color:#fff;border-color:rgba(255,255,255,0.2)}
+
+#menuBtn{position:absolute;top:12px;right:12px;z-index:1000;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px}
+#menu{position:absolute;top:58px;right:12px;z-index:1000;padding:8px;display:none;flex-direction:column;gap:6px;min-width:180px;border-radius:16px}
+#menu button{padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#ddd;font-size:12px;text-align:left}
+
+#followBtn{position:absolute;bottom:110px;left:50%;transform:translateX(-50%);z-index:999;padding:13px 26px;font-size:11px;font-weight:800;border-radius:30px;letter-spacing:0.5px}
+#box{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:999;padding:14px 22px;text-align:center;font-family:system-ui;min-width:300px;border-radius:24px}
+#box a{color:#fff !important;text-decoration:none;display:block;margin-top:6px;font-size:12px;font-weight:800;opacity:0.9}
+#credito{margin-top:8px;font-size:9px;opacity:0.4;color:#fff}
+
+.leaflet-control-layers{background:rgba(20,20,20,0.45) !important; backdrop-filter:blur(12px) !important; border:1px solid rgba(255,255,255,0.15) !important; border-radius:16px !important; color:#fff !important}
+.leaflet-control-layers-expanded{color:#fff !important}
 </style>
 </head>
 <body>
@@ -33,7 +46,7 @@ html,body{margin:0;height:100%;background:#fff}
 <div id="menuBtn" class="glass" onclick="toggleMenu()">⋮</div>
 <div id="menu" class="glass">
 <button id="mHist" onclick="toggleHist();toggleMenu()">🚫 HISTÓRICO: OFF</button>
-<button onclick="zerar();toggleMenu()" style="color:#c00">🗑️ ZERAR HISTÓRICO</button>
+<button onclick="zerar();toggleMenu()" style="color:#ff7777">🗑️ ZERAR HISTÓRICO</button>
 </div>
 <button id="followBtn" class="glass" onclick="voltar()">📍 VOLTAR AO CARRO</button>
 <div id="box" class="glass">
@@ -46,7 +59,7 @@ const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M
 let ATUAL="Palio1", seguir=true, primeiro=true, verHist=false, menuAberto=false;
 const sat = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:20});
 const rua = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{maxZoom:20});
-const map = L.map('map',{layers:[rua], zoomControl:false}).setView([-20.3881,-43.7569],17);
+const map = L.map('map',{layers:[sat], zoomControl:false}).setView([-20.3881,-43.7569],17);
 L.control.layers({"🛰️ SATÉLITE": sat, "🗺️ RUA": rua},{},{position:'topleft'}).addTo(map);
 let m=L.marker([-20.3881,-43.7569]).addTo(map);
 let poly=L.polyline([],{color:'#ff0000',weight:3,opacity:0.7});
@@ -76,7 +89,7 @@ async function up(){
   }catch(e){}
 }
 setTimeout(()=>map.invalidateSize(),500);up();setInterval(up,10000);
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=7');}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=8');}
 </script>
 </body>
 </html>
