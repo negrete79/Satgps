@@ -1,7 +1,7 @@
 {
-  "name": "Carro GPS Online",
+  "name": "Carro GPS",
   "short_name": "Carro GPS",
-  "start_url": "./ver.html",
+  "start_url": "./index.html?v=4",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
