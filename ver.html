@@ -1,45 +1,45 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Carro GPS</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>Carro GPS Online</title>
+<link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-html,body{margin:0;height:100%}
+html,body{margin:0;height:100%;background:#000}
 #map{height:100vh;width:100vw}
 #box{
-  position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
-  z-index:999;background:#000000d9;color:#fff;
-  padding:10px 16px;border-radius:12px;text-align:center;
-  font-family:sans-serif;font-size:13px;line-height:1.4;
-  box-shadow:0 4px 15px #0005;min-width:220px;
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  z-index:999;background:#000000e6;color:#fff;
+  padding:10px 18px;border-radius:14px;text-align:center;
+  font-family:sans-serif;font-size:13px;line-height:1.5;
+  box-shadow:0 4px 20px #0008;min-width:230px;
 }
-#box a{color:#4ade80;text-decoration:none;font-weight:bold}
-#box small{opacity:.7}
+#box a{color:#4ade80;text-decoration:none;font-weight:bold;display:block;margin-top:4px}
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="box">📡 Buscando...</div>
+<div id="box">📡 Buscando sinal...</div>
 <script>
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
 const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
 const map=L.map('map').setView([-20.3881,-43.7569],18);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(map);
 let m=L.marker([-20.3881,-43.7569]).addTo(map);
-
 async function up(){
-  const r=await fetch(`${U}/rest/v1/rastreador?device_id=eq.LG&order=updated_at.desc&limit=1`,{headers:{apikey:K,Authorization:"Bearer "+K}});
-  const d=await r.json();
-  if(d[0]){
-    const {lat,lng,updated_at}=d[0];
-    m.setLatLng([lat,lng]);
-    map.panTo([lat,lng]);
-    document.getElementById('box').innerHTML=
-      `🟢 CARRO GPS ONLINE<br>`+
-      `<small>${new Date(updated_at).toLocaleTimeString('pt-BR')}</small><br>`+
-      `<a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">📍 IR PARA O GOOGLE MAPS</a>`;
-  }
+  try{
+    const r=await fetch(`${U}/rest/v1/rastreador?device_id=eq.LG&order=updated_at.desc&limit=1`,{headers:{apikey:K,Authorization:"Bearer "+K}});
+    const d=await r.json();
+    if(d[0]){
+      const {lat,lng}=d[0];
+      m.setLatLng([lat,lng]); map.panTo([lat,lng]);
+      document.getElementById('box').innerHTML=`🟢 CARRO GPS ONLINE<br><a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">📍 IR PARA O GOOGLE MAPS</a>`;
+    }
+  }catch(e){}
 }
 up(); setInterval(up,3000);
 </script>
