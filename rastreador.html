@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rastreador</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#fff;font-family:system-ui;height:100vh;overflow:hidden}
+#map{width:100%;height:100vh;background:#111}
+.top{position:absolute;top:12px;left:12px;right:12px;z-index:1000;display:flex;justify-content:space-between;pointer-events:none}
+.top *{pointer-events:auto}
+.gbtn{background:rgba(0,0,0,0.5);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:10px 18px;border-radius:100px;font-weight:700}
+.gbtn.active{background:#fff;color:#000}
+#btnCenter{position:absolute;bottom:100px;right:16px;z-index:1001;background:rgba(0,0,0,0.6);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.15);width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px}
+#sheet{position:absolute;bottom:0;left:0;right:0;background:rgba(35,35,35,0.35);backdrop-filter:blur(40px) saturate(180%);-webkit-backdrop-filter:blur(40px);border-top:1px solid rgba(255,255,255,0.18);border-radius:28px 28px 0 0;z-index:1001;padding:12px 20px 20px;transition:0.35s}
+#sheet.min{transform:translateY(calc(100% - 50px))}
+.handle-area{height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+.handle{width:40px;height:5px;background:rgba(255,255,255,0.5);border-radius:10px}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="top">
+<button class="gbtn" onclick="history.back()">← Voltar</button>
+<div style="display:flex;gap:6px"><button id="bRua" class="gbtn active" onclick="troca('rua')">Rua</button><button id="bSat" class="gbtn" onclick="troca('sat')">Satélite</button></div>
+</div>
+<button id="btnCenter" onclick="centralizar()">🎯</button>
+<div id="sheet">
+<div class="handle-area" onclick="sheet.classList.toggle('min')"><div class="handle"></div><div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:6px">↑ recolhe / expande ↓</div></div>
+<div id="info">Carregando...</div>
+</div>
+
+<script>
+const U="https://jpaflbkafupwqfqfcjrv.supabase.co";
+const K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
+const params=new URLSearchParams(location.search);
+let DEVICE_ID=(params.get('id')||'PALIO2').toUpperCase();
+let map=null,rL,sL,sLb,marker=null,ultPos=null;
+
+function init(){
+  map=L.map('map',{zoomControl:false}).setView([-23,-48],6);
+  rL=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+  sL=L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:20});
+  sLb=L.tileLayer('https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}',{maxZoom:20});
+  L.control.zoom({position:'bottomright'}).addTo(map);
+}
+function troca(m){
+  if(m==='sat'){map.removeLayer(rL);sL.addTo(map);sLb.addTo(map);bSat.classList.add('active');bRua.classList.remove('active')}
+  else{map.removeLayer(sL);map.removeLayer(sLb);rL.addTo(map);bRua.classList.add('active');bSat.classList.remove('active')}
+}
+function centralizar(){if(ultPos) map.setView(ultPos,18,{animate:true})}
+
+async function carregar(){
+  try{
+    // busca ignorando maiúsculo/minúsculo
+    const res=await fetch(`${U}/rest/v1/rastreador?device_id=ilike.${DEVICE_ID}&order=updated_at.desc&limit=1`,{headers:{apikey:K,Authorization:`Bearer ${K}`}});
+    const dados=await res.json();
+    if(!dados.length){
+      info.innerHTML=`<b>${DEVICE_ID}</b><br><span style="color:#ffaa00">Aguardando primeira localização...<br>Envie dados do rastreador com device_id=${DEVICE_ID}</span><div style="margin-top:12px"><button class="gbtn" style="background:#a6ff00;color:#000" onclick="location.reload()">🔄 Tentar novamente</button></div>`;
+      return;
+    }
+    const d=dados[0];
+    ultPos=[+d.lat,+d.lng];
+    if(!marker){marker=L.marker(ultPos).addTo(map); map.setView(ultPos,17)}
+    else marker.setLatLng(ultPos);
+    const bat=d.battery!=null?parseInt(d.battery):0;
+    const online=Date.now()-new Date(d.updated_at).getTime()<120000;
+    info.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><b style="font-size:22px">${d.device_id}</b> <span style="font-size:11px;padding:4px 8px;border-radius:20px;background:${online?'#a6ff00':'#333'};color:${online?'#000':'#888'}">${online?'● ONLINE':'○ OFFLINE'}</span><br><span style="font-size:11px;color:#ccc">${new Date(d.updated_at).toLocaleString('pt-BR')}</span></div>
+        <div style="text-align:right"><div style="font-size:32px;font-weight:900;color:#a6ff00">${bat}%</div><div style="font-size:9px;color:#aaa">BATERIA</div></div>
+      </div>
+      <div style="height:4px;background:rgba(255,255,255,0.2);border-radius:10px;margin:12px 0"><div style="height:100%;width:${bat}%;background:#a6ff00"></div></div>
+      <div style="display:flex;gap:8px">
+        <button class="gbtn" style="flex:1" onclick="centralizar()">🎯 Voltar pro carro</button>
+        <button class="gbtn" style="flex:1;background:#a6ff00;color:#000" onclick="window.open('https://maps.google.com/?q=${d.lat},${d.lng}','_blank')">📍 Google</button>
+      </div>
+      <div style="font-size:10px;color:#888;background:rgba(0,0,0,0.3);padding:8px;border-radius:8px;margin-top:10px;word-break:break-all">Link: ${location.href}<br><b style="color:#a6ff00" onclick="navigator.clipboard.writeText(location.href);alert('Copiado')">📋 Copiar link</b></div>
+    `;
+  }catch(e){info.innerHTML="Erro: "+e.message}
+}
+init(); carregar(); setInterval(carregar,5000);
+</script>
+</body>
+</html>
