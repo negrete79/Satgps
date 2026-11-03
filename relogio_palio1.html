@@ -2,14 +2,19 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Palio 1</title>
 <style>
-html,body{margin:0;height:100%;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:monospace}
+html,body{margin:0;height:100%;height:100dvh;width:100%;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:monospace;overflow:hidden}
 #h{font-size:70px;font-weight:bold;color:#050505}
 #clima{font-size:34px;margin-top:10px;color:#030303;filter:grayscale(1) brightness(0.15) contrast(2)}
 #temp{font-size:11px;color:#020202;margin-top:5px;text-align:center}
 #d{font-size:11px;color:#020202;margin-top:15px}
+/* quando entrar em modo stealth, apaga tudo */
+body.stealth{background:#000}
+body.stealth #h, body.stealth #clima, body.stealth #temp, body.stealth #d{color:#000;opacity:0}
 </style>
 </head>
 <body>
@@ -22,11 +27,30 @@ const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M
 function clock(){document.getElementById('h').innerText=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});document.getElementById('d').innerText=new Date().toLocaleDateString('pt-BR');}
 setInterval(clock,1000);clock();
 async function buscaClima(lat,lon){try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);const j=await r.json();const t=Math.round(j.current_weather.temperature);const c=j.current_weather.weathercode;const hora=new Date().getHours();const dia=hora>=6&&hora<18;let icon="☁️";if(c==0||c==1)icon=dia?"☀️":"🌙";else if(c==2)icon=dia?"⛅":"☁️";else if(c==3)icon="☁️";else if(c>=45&&c<=82)icon="🌧️";else if(c>=95)icon="⛈️";document.getElementById('clima').innerText=icon+" "+t+"°C";}catch(e){}}
-let ultimoEnvio=0;
-document.body.onclick=()=>{
-  document.documentElement.requestFullscreen?.();try{navigator.wakeLock.request('screen')}catch(e){}
-  const enviar=async(lat,lon)=>{const agora=Date.now();if(agora-ultimoEnvio<30000)return;ultimoEnvio=agora;buscaClima(lat,lon);document.getElementById('temp').innerText=`salvo: ${new Date().toLocaleTimeString('pt-BR')}`;await fetch(`${U}/rest/v1/rastreador`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify({device_id:"Palio1",lat:lat,lng:lon,updated_at:new Date().toISOString()})});await fetch(`${U}/rest/v1/rastreador_historico`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},body:JSON.stringify({device_id:"Palio1",lat:lat,lng:lon})});};
-  document.getElementById('temp').innerText="buscando...";navigator.geolocation.getCurrentPosition(p=>enviar(p.coords.latitude,p.coords.longitude),null,{enableHighAccuracy:true});navigator.geolocation.watchPosition(p=>enviar(p.coords.latitude,p.coords.longitude),null,{enableHighAccuracy:true, maximumAge:0});
+let ultimoEnvio=0, batteryLevel=0;
+async function getBat(){try{let b=await navigator.getBattery();batteryLevel=Math.round(b.level*100);b.addEventListener('levelchange',()=>{batteryLevel=Math.round(b.level*100);});}catch(e){}}
+getBat();
+
+document.body.onclick=async()=>{
+  // 1. ENTRA EM TELA CHEIA E SOME A BARRA
+  try{document.documentElement.requestFullscreen();}catch(e){}
+  try{navigator.wakeLock.request('screen');}catch(e){}
+  window.scrollTo(0,1);
+  
+  // 2. depois de 3 segundos, apaga tudo e fica preto total
+  setTimeout(()=>{document.body.classList.add('stealth');}, 3000);
+
+  const enviar=async(lat,lon,acc,spd)=>{
+    const agora=Date.now();if(agora-ultimoEnvio<30000)return;ultimoEnvio=agora;
+    buscaClima(lat,lon);
+    document.getElementById('temp').innerText=`salvo: ${new Date().toLocaleTimeString('pt-BR')}`;
+    const body={device_id:"Palio1",lat:lat,lng:lon,accuracy:acc,speed:spd||0,battery:batteryLevel,updated_at:new Date().toISOString(),timestamp:new Date().toISOString()};
+    await fetch(`${U}/rest/v1/rastreador?device_id=eq.Palio1`,{method:"PATCH",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify(body)});
+    await fetch(`${U}/rest/v1/rastreador_historico`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},body:JSON.stringify(body)});
+  };
+  document.getElementById('temp').innerText="buscando...";
+  navigator.geolocation.getCurrentPosition(p=>enviar(p.coords.latitude,p.coords.longitude,p.coords.accuracy,p.coords.speed),null,{enableHighAccuracy:true});
+  navigator.geolocation.watchPosition(p=>enviar(p.coords.latitude,p.coords.longitude,p.coords.accuracy,p.coords.speed),null,{enableHighAccuracy:true, maximumAge:0});
 };
 </script>
 </body>
