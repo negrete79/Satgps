@@ -76,7 +76,7 @@ async function up(){
     let diffMin = (Date.now() - last)/1000/60;
     let statusEl = document.getElementById('status');
     let iconEl = document.getElementById('statusIcon');
-    if(diffMin <= 2){ statusEl.innerText = '● ONLINE'; statusEl.className = 'online'; iconEl.innerText = '🟢'; } else { statusEl.innerText = '● OFFLINE'; statusEl.className = 'offline'; iconEl.innerText = '🔴'; }
+    if(diffMin <= 10){ statusEl.innerText = '● ONLINE'; statusEl.className = 'online'; iconEl.innerText = '🟢'; } else { statusEl.innerText = '● OFFLINE'; statusEl.className = 'offline'; iconEl.innerText = '🔴'; }
     document.getElementById('tempo').innerText = tempoAtras(d[0].updated_at);
     if(d[0].battery != null){ let b = Math.round(d[0].battery); document.getElementById('bateria').innerText = `${b > 60 ? '🔋' : '🪫'} ${b}%`; } else { document.getElementById('bateria').innerText = '🔋 --%'; }
     let rh=await fetch(`${U}/rest/v1/rastreador_historico?${ids}&order=created_at.asc&limit=500`,{headers:{apikey:K,Authorization:"Bearer "+K},cache:'no-store'});
