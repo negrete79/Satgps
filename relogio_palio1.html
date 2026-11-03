@@ -2,56 +2,49 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#000000">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>Palio 1</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rastreador Palio 1 - STEALTH</title>
 <style>
-html,body{margin:0;height:100%;height:100dvh;width:100%;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:monospace;overflow:hidden}
-#h{font-size:70px;font-weight:bold;color:#050505}
-#clima{font-size:34px;margin-top:10px;color:#030303;filter:grayscale(1) brightness(0.15) contrast(2)}
-#temp{font-size:11px;color:#020202;margin-top:5px;text-align:center}
-#d{font-size:11px;color:#020202;margin-top:15px}
-/* quando entrar em modo stealth, apaga tudo */
-body.stealth{background:#000}
-body.stealth #h, body.stealth #clima, body.stealth #temp, body.stealth #d{color:#000;opacity:0}
+html,body{margin:0;height:100%;background:#000;color:#fff;font-family:system-ui}
+#normal{padding:20px;text-align:center}
+#stealth{position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;z-index:9999;display:none}
+button{padding:15px 30px;font-size:16px;border-radius:12px;border:none;font-weight:800;margin:10px}
+#btnStart{background:#fff;color:#000}
+#btnStealth{background:#111;color:#555;border:1px solid #222}
+#info{margin-top:20px;font-size:12px;opacity:0.6}
 </style>
 </head>
 <body>
-<div id="h">--:--</div>
-<div id="clima">--</div>
-<div id="temp">toque na tela</div>
-<div id="d">--/--</div>
+<div id="normal">
+<h2>PALIO 1 - Rastreador</h2>
+<button id="btnStart" onclick="iniciar()">▶️ INICIAR RASTREAMENTO</button><br>
+<button id="btnStealth" onclick="ativarStealth()">🌑 MODO ESCURO TOTAL</button>
+<div id="status">Parado</div>
+<div id="info"></div>
+<div style="margin-top:20px;font-size:11px;opacity:0.4">Bateria: <span id="bat">--</span> | Pontos: <span id="pts">0</span></div>
+</div>
+<div id="stealth" onclick="desativarStealth()"></div>
 <script>
 const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
-function clock(){document.getElementById('h').innerText=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});document.getElementById('d').innerText=new Date().toLocaleDateString('pt-BR');}
-setInterval(clock,1000);clock();
-async function buscaClima(lat,lon){try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);const j=await r.json();const t=Math.round(j.current_weather.temperature);const c=j.current_weather.weathercode;const hora=new Date().getHours();const dia=hora>=6&&hora<18;let icon="☁️";if(c==0||c==1)icon=dia?"☀️":"🌙";else if(c==2)icon=dia?"⛅":"☁️";else if(c==3)icon="☁️";else if(c>=45&&c<=82)icon="🌧️";else if(c>=95)icon="⛈️";document.getElementById('clima').innerText=icon+" "+t+"°C";}catch(e){}}
-let ultimoEnvio=0, batteryLevel=0;
-async function getBat(){try{let b=await navigator.getBattery();batteryLevel=Math.round(b.level*100);b.addEventListener('levelchange',()=>{batteryLevel=Math.round(b.level*100);});}catch(e){}}
-getBat();
-
-document.body.onclick=async()=>{
-  // 1. ENTRA EM TELA CHEIA E SOME A BARRA
-  try{document.documentElement.requestFullscreen();}catch(e){}
-  try{navigator.wakeLock.request('screen');}catch(e){}
-  window.scrollTo(0,1);
-  
-  // 2. depois de 3 segundos, apaga tudo e fica preto total
-  setTimeout(()=>{document.body.classList.add('stealth');}, 3000);
-
-  const enviar=async(lat,lon,acc,spd)=>{
-    const agora=Date.now();if(agora-ultimoEnvio<30000)return;ultimoEnvio=agora;
-    buscaClima(lat,lon);
-    document.getElementById('temp').innerText=`salvo: ${new Date().toLocaleTimeString('pt-BR')}`;
-    const body={device_id:"Palio1",lat:lat,lng:lon,accuracy:acc,speed:spd||0,battery:batteryLevel,updated_at:new Date().toISOString(),timestamp:new Date().toISOString()};
-    await fetch(`${U}/rest/v1/rastreador?device_id=eq.Palio1`,{method:"PATCH",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify(body)});
-    await fetch(`${U}/rest/v1/rastreador_historico`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},body:JSON.stringify(body)});
-  };
-  document.getElementById('temp').innerText="buscando...";
-  navigator.geolocation.getCurrentPosition(p=>enviar(p.coords.latitude,p.coords.longitude,p.coords.accuracy,p.coords.speed),null,{enableHighAccuracy:true});
-  navigator.geolocation.watchPosition(p=>enviar(p.coords.latitude,p.coords.longitude,p.coords.accuracy,p.coords.speed),null,{enableHighAccuracy:true, maximumAge:0});
-};
+const DEVICE="Palio1";
+let watchId=null, intervalo=null, pontos=0, wakeLock=null;
+async function getBatteryReal(){ try{ if(navigator.getBattery){ let b=await navigator.getBattery(); return Math.round(b.level*100); } }catch(e){} return null; }
+async function enviar(lat,lng){
+ let bat=await getBatteryReal();
+ let payload={device_id:DEVICE,lat:lat,lng:lng,updated_at:new Date().toISOString(),battery:bat};
+ try{ await fetch(`${U}/rest/v1/rastreador?device_id=eq.${DEVICE}`,{method:'PATCH',headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify(payload)}); }catch(e){}
+ try{ await fetch(`${U}/rest/v1/rastreador_historico`,{method:'POST',headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},body:JSON.stringify({device_id:DEVICE,lat:lat,lng:lng,battery:bat})}); }catch(e){}
+ document.getElementById('pts').innerText=++pontos; if(bat!==null) document.getElementById('bat').innerText=bat+'%';
+}
+function iniciar(){
+ if(watchId!==null) return;
+ document.getElementById('status').innerText='🟢 Rastreando...';
+ if('wakeLock' in navigator){ navigator.wakeLock.request('screen').then(l=>{wakeLock=l;}).catch(()=>{}); }
+ watchId=navigator.geolocation.watchPosition(pos=>{ enviar(pos.coords.latitude,pos.coords.longitude); document.getElementById('info').innerText=pos.coords.latitude.toFixed(6)+', '+pos.coords.longitude.toFixed(6); },err=>{document.getElementById('status').innerText='Erro GPS: '+err.message;},{enableHighAccuracy:true,maximumAge:0,timeout:10000});
+ intervalo=setInterval(()=>{ navigator.geolocation.getCurrentPosition(p=>enviar(p.coords.latitude,p.coords.longitude)); },30000);
+}
+function ativarStealth(){ if(watchId===null){iniciar();} document.getElementById('stealth').style.display='block'; document.getElementById('normal').style.display='none'; }
+function desativarStealth(){ document.getElementById('stealth').style.display='none'; document.getElementById('normal').style.display='block'; }
 </script>
 </body>
 </html>
