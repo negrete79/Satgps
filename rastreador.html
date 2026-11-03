@@ -1,18 +1,47 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Rastreador</title></head><body style="background:#000;color:#fff;font-family:system-ui;padding:20px;text-align:center">
-<h2 id="id">PALIO1</h2><div id="status">Aguardando GPS...</div><button id="btn" style="padding:20px;background:#b6ff00;border:0;border-radius:15px;font-weight:900;width:100%;margin-top:20px" onclick="iniciar()">INICIAR RASTREAMENTO</button>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rastreador + Rádio</title>
+</head>
+<body style="background:#000;color:#fff;font-family:system-ui;padding:20px;text-align:center">
+<h2 id="tid">PALIO1</h2>
+<div id="status" style="color:#888;margin:10px">GPS parado</div>
+
+<!-- RÁDIO -->
+<audio id="radio" controls style="width:100%;margin:15px 0"></audio>
+<br>
+<button onclick="document.getElementById('radio').src='https://seu-link-da-radio-aqui'; document.getElementById('radio').play()" style="padding:12px;background:#222;color:#fff;border:1px solid #333;border-radius:10px">▶️ TOCAR RÁDIO</button>
+
+<!-- RASTREADOR -->
+<button id="btn" onclick="iniciar()" style="padding:18px;background:#b6ff00;color:#000;border:0;border-radius:15px;font-weight:900;width:100%;margin-top:20px;font-size:16px">📡 INICIAR RASTREAMENTO</button>
+
 <script>
 const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
-let ID=new URLSearchParams(location.search).get('id')||'PALIO1'; ID=ID.toUpperCase(); document.getElementById('id').innerText=ID;
+let ID = new URLSearchParams(location.search).get('id') || 'PALIO1';
+ID = ID.toUpperCase();
+document.getElementById('tid').innerText = ID;
 let watch=null;
-async function enviar(lat,lng,bat){
-  let body={device_id:ID,lat:lat,lng:lng,battery:bat||100,updated_at:new Date().toISOString()};
+
+async function enviar(lat,lng){
+  let bat=100; try{ let b=await navigator.getBattery(); bat=Math.round(b.level*100);}catch{}
+  let body={device_id:ID,lat:lat,lng:lng,battery:bat,updated_at:new Date().toISOString()};
   await fetch(`${U}/rest/v1/rastreador`,{method:'POST',headers:{apikey:K,Authorization:"Bearer "+K,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},body:JSON.stringify(body)});
   await fetch(`${U}/rest/v1/rastreador_historico`,{method:'POST',headers:{apikey:K,Authorization:"Bearer "+K,'Content-Type':'application/json'},body:JSON.stringify({device_id:ID,lat:lat,lng:lng,created_at:new Date().toISOString()})});
-  document.getElementById('status').innerText=`Enviando: ${lat.toFixed(5)}, ${lng.toFixed(5)} - ${new Date().toLocaleTimeString()}`;
+  document.getElementById('status').innerText=`Enviando ${lat.toFixed(5)}, ${lng.toFixed(5)} - ${new Date().toLocaleTimeString()} - 🔋 ${bat}%`;
 }
-async function iniciar(){
-  document.getElementById('btn').style.display='none';
-  let bat=100; try{ let b=await navigator.getBattery(); bat=Math.round(b.level*100); }catch{}
-  watch=navigator.geolocation.watchPosition(p=>{ enviar(p.coords.latitude,p.coords.longitude,bat); },{enableHighAccuracy:true,maximumAge:0,timeout:10000});
+
+function iniciar(){
+  document.getElementById('btn').innerText='🟢 RASTREANDO...';
+  document.getElementById('btn').style.background='#4ade80';
+  if(watch) return;
+  watch=navigator.geolocation.watchPosition(
+    p=>{ enviar(p.coords.latitude,p.coords.longitude); },
+    e=>{ document.getElementById('status').innerText='Erro GPS: '+e.message; },
+    {enableHighAccuracy:true, maximumAge:0, timeout:10000}
+  );
 }
-</script></body></html>
+</script>
+</body>
+</html>
