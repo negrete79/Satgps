@@ -1,127 +1,71 @@
-# 🔍 Go service - Rastreador GPS
+# SatGPS - Frota PRO
 
-Sistema de rastreamento disfarçado como página de pesquisa (estilo Google), com dashboard para múltiplos carros (PALIO 1 e PALIO 2).
+Sistema de rastreamento de frota com painel admin + link público compartilhável.
 
-## 📦 Arquivos do projeto
+## 📦 Arquivos
 
-| Arquivo | Função | Onde abre |
-|---|---|---|
-| `pesquisa.html` | Rastreador disfarçado "Go service" | Celular do carro |
-| `rastreamento_palio.html` | Dashboard com PALIO 1 + PALIO 2 + 3 status | Seu PC/celular |
-| `manifest-clock.json` | Manifesto PWA "Go service" | (junto com pesquisa.html) |
-| `sw.js` | Service Worker (cache + push + sync) | (junto com pesquisa.html) |
-| `setup_supabase.sql` | Cria tabelas e bucket no Supabase | (config Supabase) |
-
-## 🎯 Status do dashboard
-
-| Status | Cor | Quando | Pino no mapa |
-|---|---|---|---|
-| 🟢 **ONLINE** | `#22c55e` | ≤ 5 min sem update | Azul sólido |
-| 🟡 **SEM CONEXÃO** | `#f59e0b` | 5–60 min | Azul + círculo laranja pulsante |
-| 🔴 **OFFLINE** | `#ef4444` | > 60 min | Cinza |
-
-## 🚀 Como publicar no GitHub Pages
-
-### 1. Criar repositório
-- Acesse https://github.com/new
-- Nome: `rastreador` (ou outro)
-- **Público** (obrigatório para GitHub Pages grátis)
-- Marque "Add a README file"
-- Create repository
-
-### 2. Fazer upload dos 5 arquivos
-- Add file → Upload files
-- Arraste: `pesquisa.html`, `rastreamento_palio.html`, `manifest-clock.json`, `sw.js`, `setup_supabase.sql`
-- Commit changes
-
-### 3. Ativar GitHub Pages
-- Settings → Pages (menu lateral)
-- Source: Deploy from a branch
-- Branch: `main` / Folder: `/ (root)`
-- Save
-
-### 4. Acessar (HTTPS público)
-```
-Celular do carro:  https://SEU_USUARIO.github.io/rastreador/pesquisa.html
-Seu dashboard:     https://SEU_USUARIO.github.io/rastreamento_palio.html
-```
-
-## 🗄️ Configurar Supabase
-
-1. Crie projeto em https://supabase.com
-2. Vá em **SQL Editor**
-3. Cole todo o conteúdo de `setup_supabase.sql`
-4. Run
-5. Cria tabelas: `comandos`, `rastreador`, `rastreador_historico`
-6. Cria bucket público: `videos`
-
-## 📱 Como usar
-
-### No celular do carro (rastreador)
-1. Abra `https://SEU_USUARIO.github.io/rastreador/pesquisa.html`
-2. Chrome → Menu → **Adicionar à tela inicial**
-3. Abra o app "Go service"
-4. **Toque uma vez na tela** (ativa o sistema)
-5. Aceite as permissões: Localização, Microfone, Câmera
-6. Bolinha verde aparece no canto inferior esquerdo
-
-### No seu PC/celular (dashboard)
-1. Abra `https://SEU_USUARIO.github.io/rastreamento_palio.html`
-2. Veja PALIO 1 e PALIO 2 no mapa satélite
-3. Clique nos botões do topo pra alternar entre carros
-4. Botão "VOLTAR AO CARRO" faz zoom até o pino
-
-## 🔧 Configurar múltiplos carros
-
-No `rastreamento_palio.html`:
-
-```js
-const CARS = {
-  PALIO1: { device_id: "LG",   label: "PALIO 1" },
-  PALIO2: { device_id: "LG2",  label: "PALIO 2" }
-};
-```
-
-Cada carro precisa de um **device_id diferente** na tabela `rastreador`. Pra testar o PALIO 2:
-
-```sql
-INSERT INTO rastreador (device_id, lat, lng, updated_at)
-VALUES ('LG2', -20.3881, -43.7569, now());
-```
-
-E no `pesquisa.html` (ou em uma cópia dele pra cada carro), troque o `DEVICE_ID`:
-
-```js
-const DEVICE_ID = "LG2";  // pro segundo carro
-```
-
-## 🎙️ Comandos remotos (áudio/vídeo)
-
-Pra enviar comandos do dashboard, ainda precisa usar o `carro_gps.html` (versão com botões 🎙️🎥🎬). Ou insira comandos direto no SQL:
-
-```sql
-INSERT INTO comandos (device_id, acao) VALUES ('LG', 'audio');  -- grava áudio
-INSERT INTO comandos (device_id, acao) VALUES ('LG', 'video'); -- grava vídeo
-```
-
-## ⚠️ Limitações do PWA
-
-| Situação | Funciona? |
+| Arquivo | Função |
 |---|---|
-| Aba aberta e visível | ✅ Perfeito |
-| Aba em segundo plano | 🟡 Funciona com áudio silencioso + Wake Lock |
-| App minimizado (PWA) | 🟡 Por alguns minutos |
-| App fechado pelo usuário (swipe) | ❌ Morre |
-| Modo economia de bateria | ❌ Bloqueia tudo |
-| iPhone em background | 🔴 Fraco (iOS é agressivo) |
+| `index.html` | Painel da frota (login admin/1234, CRUD de veículos) |
+| `rastreador.html` | Mapa individual do veículo (link público pro cliente) |
+| `manifest.json` | PWA installável (SatGPS - Frota PRO) |
+| `service-worker.js` | Cache offline |
+| `setup_rls.sql` | SQL opcional para liberar INSERT/UPDATE/DELETE no Supabase |
 
-## 🔒 Sobre a chave do Supabase
+## 🚀 Publicar no GitHub Pages
 
-A chave `sb_publishable_...` está visível no código JavaScript. Isso é OK porque:
-- É a chave **anônima** (apenas leitura/escrita nas tabelas permitidas)
-- As políticas RLS protegem os dados
-- Nunca exponha a `service_role` key no frontend
+1. Suba todos os 5 arquivos no repositório https://github.com/negrete79/Satgps
+2. Settings → Pages → Branch: main / Folder: / → Save
+3. Em ~1 minuto estará em:
+   - Painel: https://negrete79.github.io/Satgps/
+   - Exemplo: https://negrete79.github.io/Satgps/rastreador.html?id=PALIO1
+
+## ⚙️ Configuração do Supabase (IMPORTANTE)
+
+Para o painel poder **adicionar/excluir veículos** automaticamente, rode o SQL `setup_rls.sql` no Supabase:
+
+1. https://supabase.com/dashboard
+2. Selecione o projeto
+3. SQL Editor → New query
+4. Cole o conteúdo de `setup_rls.sql`
+5. Run
+
+Isso libera INSERT/UPDATE/DELETE na tabela `rastreador` para a chave publicável.
+
+## 🎯 Funcionalidades
+
+### Painel (index.html)
+- 🔐 Login admin / 1234 (salva em localStorage)
+- 📊 Stats no topo: Total, Online (< 2 min), Bateria média
+- ➕ Adicionar veículo (cria no Supabase com localização inicial)
+- ✏️ Editar (não permite mudar ID)
+- 🗑️ Excluir com dupla confirmação (digitar ID)
+- 🔄 Atualização automática a cada 6 segundos
+- 📋 Copiar link / 🔗 Abrir link / 📍 Ver mapa
+
+### Rastreador (rastreador.html?id=ID)
+- 🗺️ Mapa Leaflet satélite (Google) + rua (OpenStreetMap)
+- 🚗 Marcador customizado de carro (estilo Tesla/99)
+- 📍 Foca no veículo com zoom 17 na primeira carga
+- 🎈 Botão flutuante "voltar ao carro" quando usuário arrasta mapa
+- 📱 Bottom sheet arrastável com info do veículo
+- 🔋 Bateria com barra colorida (verde/amarelo/vermelho)
+- ⏱️ "Atualizado há X min" atualiza sozinho
+- 🆘 Se ID não existe: botão "Criar localização inicial" (cria no Supabase)
+- 🟢 Status online/offline baseado em updated_at (< 2 min)
+
+### PWA
+- ✅ Instalável no Android e iPhone
+- ✅ Abre fullscreen standalone
+- ✅ Funciona offline (cached)
+- ✅ Ícone de satélite
+
+## 🔗 Links importantes
+
+- Painel admin: `https://negrete79.github.io/Satgps/`
+- Link do cliente (compartilhar no WhatsApp):
+  `https://negrete79.github.io/Satgps/rastreador.html?id=ID_DO_VEICULO`
 
 ## 👤 Créditos
 
-Criado por **Elias Costa • NEGRET'S**
+Criado por Elias Costa • NEGRET'S
