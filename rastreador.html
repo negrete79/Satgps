@@ -4,439 +4,46 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Rastreador · Transmissão</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📡</text></svg>">
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  html,body{min-height:100%;background:#0b1220;color:#e2e8f0;
-    font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif}
-  body{display:flex;justify-content:center;padding:14px}
-  #telaId,#app{width:100%;max-width:520px}
-  .tela{padding:40px 8px;text-align:center}
-  .tela h1{font-size:22px;margin-bottom:8px}
-  .tela p{color:#8ea0c4;font-size:14px;margin-bottom:18px}
-  #campoId{width:100%;padding:15px;border-radius:14px;border:1px solid #2a3c60;
-    background:#101a30;color:#f1f5f9;font-size:18px;text-align:center;letter-spacing:.06em;
-    outline:none;margin-bottom:12px}
-  #campoId:focus{border-color:#22c55e}
-  .btn{width:100%;padding:15px;border:none;border-radius:14px;font-size:15px;
-    font-weight:800;cursor:pointer;letter-spacing:.04em}
-  .btn.sec{background:#152238;color:#e2e8f0;border:1px solid #2a3c60;margin-top:10px}
-
-  header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-  .id-veiculo{font-size:28px;font-weight:900;letter-spacing:.03em;color:#f1f5f9}
-  .badge{padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;
-    border:1px solid transparent}
-  .badge.ok{background:rgba(34,197,94,.14);color:#4ade80;border-color:rgba(34,197,94,.45)}
-  .badge.err{background:rgba(239,68,68,.14);color:#f87171;border-color:rgba(239,68,68,.45)}
-  .badge.env{background:rgba(59,130,246,.14);color:#60a5fa;border-color:rgba(59,130,246,.45)}
-  .badge.para{background:#152238;color:#94a3b8;border-color:#2a3c60}
-  #linkMapa{margin-left:auto;font-size:12.5px;color:#7c8db0;text-decoration:none;
-    border:1px solid #2a3c60;padding:6px 11px;border-radius:99px}
-  #linkMapa:hover{color:#e2e8f0}
-
-  .cartoes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-  @media (max-width:380px){.cartoes{grid-template-columns:1fr}}
-  .cartao{background:#101a30;border:1px solid #1f2d4d;border-radius:14px;padding:12px}
-  .rotulo{font-size:10.5px;letter-spacing:.14em;color:#64748b;font-weight:700}
-  .valor{font-size:16.5px;font-weight:800;margin-top:6px;word-break:break-all}
-  .detalhe{font-size:11.5px;color:#8ea0c4;margin-top:4px;line-height:1.45}
-
-  #btnIniciar{background:#22c55e;color:#052e16}
-  #btnIniciar.ativo{background:#1e293b;color:#f87171;border:1px solid #3b1d24}
-  #btnRadio{background:#152238;color:#e2e8f0;border:1px solid #2a3c60;margin-top:10px}
-  .avisos{font-size:11.5px;color:#64748b;margin:12px 2px;line-height:1.6}
-  .log{background:#0a1120;border:1px solid #1c2a47;border-radius:12px;padding:10px 12px;
-    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:#8ea0c4;
-    max-height:190px;overflow:auto}
-  .log div{padding:1px 0;word-break:break-all}
-  audio{display:none}
+*{margin:0;padding:0;box-sizing:border-box}html,body{min-height:100%;background:#0b1220;color:#e2e8f0;font-family:system-ui}body{display:flex;justify-content:center;padding:14px}#app{width:100%;max-width:520px}header{display:flex;gap:10px;align-items:center;margin-bottom:12px}.id{font-size:28px;font-weight:900}.badge{padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;border:1px solid}.badge.ok{background:rgba(34,197,94,.14);color:#4ade80;border-color:rgba(34,197,94,.45)}.badge.err{background:rgba(239,68,68,.14);color:#f87171;border-color:rgba(239,68,68,.45)}.badge.env{background:rgba(59,130,246,.14);color:#60a5fa;border-color:rgba(59,130,246,.45)}.badge.para{background:#152238;color:#94a3b8;border-color:#2a3c60}.cartao{background:#101a30;border:1px solid #1f2d4d;border-radius:14px;padding:12px;margin-bottom:10px}.rotulo{font-size:10.5px;color:#64748b;font-weight:700}.valor{font-size:16px;font-weight:800;margin-top:6px;word-break:break-all}.detalhe{font-size:11.5px;color:#8ea0c4;margin-top:4px}.btn{width:100%;padding:15px;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer}#btnIniciar{background:#22c55e;color:#052e16}#btnIniciar.ativo{background:#1e293b;color:#f87171;border:1px solid #3b1d24}.log{background:#0a1120;border:1px solid #1c2a47;border-radius:12px;padding:10px;font-family:monospace;font-size:11px;max-height:200px;overflow:auto}
 </style>
 </head>
 <body>
-
-<!-- ======================= tela 1: sem ?id= ======================= -->
-<div id="telaId" class="tela" hidden>
-  <h1>🛰️ Rastreador</h1>
-  <p>Digite o ID do veículo para gerar seu link de rastreamento:</p>
-  <input id="campoId" placeholder="Ex: PALIO1" autocomplete="off" autocapitalize="characters">
-  <button id="btnIr" class="btn">▶ INICIAR RASTREAMENTO</button>
-</div>
-
-<!-- ======================= tela 2: transmissão ==================== -->
-<main id="app" hidden>
-  <header>
-    <div class="id-veiculo" id="mostraId">—</div>
-    <div class="badge para" id="badgeEnvio">parado</div>
-    <a id="linkMapa" href="index.html">🗺️ ver mapa</a>
-  </header>
-
-  <section class="cartoes">
-    <div class="cartao">
-      <div class="rotulo">GPS</div>
-      <div class="valor" id="gpsVal">aguardando fix…</div>
-      <div class="detalhe" id="gpsAcc">watchPosition ativo ao iniciar</div>
-    </div>
-    <div class="cartao">
-      <div class="rotulo">BATERIA</div>
-      <div class="valor" id="batVal">—</div>
-      <div class="detalhe" id="batExtra">navigator.getBattery()</div>
-    </div>
-    <div class="cartao">
-      <div class="rotulo">ÚLTIMO ENVIO</div>
-      <div class="valor" id="envioVal">—</div>
-      <div class="detalhe" id="envioDet">parado</div>
-    </div>
-    <div class="cartao">
-      <div class="rotulo">TELA</div>
-      <div class="valor" id="telaVal">liberada 🔓</div>
-      <div class="detalhe" id="telaDet">wakeLock de tela</div>
-    </div>
-  </section>
-
-  <button id="btnIniciar" class="btn">▶ INICIAR</button>
-  <button id="btnRadio" class="btn sec">📻 LIGAR RÁDIO</button>
-
-  <p class="avisos">
-    Deixe esta aba aberta com o rádio tocando: áudio + tela ligada impedem o Android de
-    suspender os timers. Se o GPS travar em segundo plano, a última posição continua sendo
-    reenviada a cada 25 s e o veículo permanece ONLINE no mapa.
-  </p>
-
-  <div class="log" id="log"></div>
-  <audio id="radio" src="https://streaming.maispu.com.br:10970/stream" preload="none"></audio>
+<main id="app">
+<header><div class="id" id="mostraId">--</div><div class="badge para" id="badgeEnvio">parado</div><a href="index.html" style="margin-left:auto;font-size:12px;color:#7c8db0;text-decoration:none;border:1px solid #2a3c60;padding:6px 11px;border-radius:99px">🗺️ mapa</a></header>
+<div class="cartao"><div class="rotulo">GPS</div><div class="valor" id="gpsVal">aguardando...</div><div class="detalhe" id="gpsAcc">watch ativo</div></div>
+<div class="cartao"><div class="rotulo">BATERIA</div><div class="valor" id="batVal">--</div><div class="detalhe" id="batExtra"></div></div>
+<div class="cartao"><div class="rotulo">ÚLTIMO ENVIO</div><div class="valor" id="envioVal">--</div><div class="detalhe" id="envioDet">parado</div></div>
+<button id="btnIniciar" class="btn">▶ INICIAR</button>
+<div class="log" id="log" style="margin-top:12px"></div>
 </main>
-
 <script>
-(function () {
-'use strict';
-
-/* ======================================================================
-   CONFIGURAÇÃO — REST direto no Supabase
-   ====================================================================== */
 var CONFIG = {
   SUPABASE_URL: 'https://wzjhyoyggthasgjygcvo.supabase.co',
   SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6amh5b3lnZ3RoYXNnanlnY3ZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjUxMTMsImV4cCI6MjA3ODY0MTExM30.k1af6Xy2MoFihd3wBOaN2vE-EWWv2ewG2y5Gwu1I5yVw',
-  REENVIO_MS:      25000,  // reenvia a última posição a cada 25 s (mantém ONLINE)
-  THROTTLE_GPS_MS: 10000,  // não deixa o watchPosition inundar o banco
-  ACC_MAX_M:       50,     // descarta fix com accuracy > 50 m se já existe posição
-  ENVIAR_CREATED_AT: true  // envia created_at do cliente (funciona mesmo sem default now())
+  REENVIO_MS: 25000,
+  THROTTLE_GPS_MS: 10000
 };
-
-var $ = function (s) { return document.querySelector(s); };
-
-/* ================== ?id= da URL ====================================== */
-var id = (new URLSearchParams(location.search).get('id') || '').trim();
-
-if (!id) {
-  $('#telaId').hidden = false;
-  $('#campoId').value = localStorage.getItem('rastreador_ultimoId') || '';
-  $('#btnIr').addEventListener('click', ir);
-  $('#campoId').addEventListener('keydown', function (e) { if (e.key === 'Enter') ir(); });
-} else {
-  boot(id);
+var id = new URLSearchParams(location.search).get('id') || 'PALIO2';
+document.getElementById('mostraId').textContent=id;
+function log(m){var d=document.createElement('div');d.textContent=new Date().toLocaleTimeString()+' '+m;document.getElementById('log').prepend(d);}
+function badge(t,txt){var b=document.getElementById('badgeEnvio');b.className='badge '+t;b.textContent=txt;}
+var lastLat=null,lastLon=null,bateria=null,watchId=null,rastreando=false,qtd=0,enviando=false,ultTent=0;
+function enviar(mot){
+ if(lastLat==null||enviando) return; enviando=true; ultTent=Date.now(); badge('env','enviando...');
+ var corpo={veiculo_id:id, lat:lastLat, lon:lastLon}; if(bateria!=null) corpo.bateria=bateria;
+ fetch(CONFIG.SUPABASE_URL+'/rest/v1/posicoes',{method:'POST',headers:{apikey:CONFIG.SUPABASE_KEY,Authorization:'Bearer '+CONFIG.SUPABASE_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(corpo)})
+ .then(r=>{enviando=false; if(r.ok){qtd++;document.getElementById('envioVal').textContent=new Date().toLocaleTimeString();document.getElementById('envioDet').textContent=qtd+' enviados';badge('ok','online ✓');log('✓ enviado '+mot);}else{r.text().then(t=>{badge('err','erro '+r.status);log('✗ HTTP '+r.status+' '+t.slice(0,300));});}})
+ .catch(e=>{enviando=false;badge('err','sem conexão');log('✗ fetch: '+e.message);});
 }
-
-function ir() {
-  var v = $('#campoId').value.trim();
-  if (!v) { $('#campoId').focus(); return; }
-  try { localStorage.setItem('rastreador_ultimoId', v); } catch (e) {}
-  location.href = location.pathname + '?id=' + encodeURIComponent(v);
+function iniciarGPS(){
+ watchId=navigator.geolocation.watchPosition(p=>{lastLat=p.coords.latitude;lastLon=p.coords.longitude;document.getElementById('gpsVal').textContent=lastLat.toFixed(6)+', '+lastLon.toFixed(6);document.getElementById('gpsAcc').textContent='±'+Math.round(p.coords.accuracy)+'m';if(Date.now()-ultTent>=CONFIG.THROTTLE_GPS_MS) enviar('gps');},e=>{document.getElementById('gpsAcc').textContent=e.message;},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
 }
-
-/* ================== aplicação ======================================== */
-function boot(idVeiculo) {
-  $('#telaId').hidden = true;
-  $('#app').hidden = false;
-  $('#mostraId').textContent = idVeiculo;
-  if (!window.isSecureContext) {
-    log('⚠ sem HTTPS: o GPS não funciona. Publique no GitHub Pages (https).');
-  }
-
-  var lastLat = null, lastLon = null, lastAcc = null, lastFixHora = null;
-  var bateria = null, carregando = false;
-  var watchId = null, rastreando = false;
-  var wakeLock = null, queroTela = false;
-  var qtdEnvios = 0, ultimoEnvioHora = null;
-  var enviando = false, ultimoTentado = 0, proxReenvio = null;
-
-  /* ---------- localStorage com prefixo do veiculo_id ---------- */
-  function ch(suf) { return idVeiculo + '_' + suf; }
-
-  function salvarUltima() {
-    try {
-      localStorage.setItem(ch('lastLat'), String(lastLat));
-      localStorage.setItem(ch('lastLon'), String(lastLon));
-      localStorage.setItem(ch('lastAcc'), lastAcc == null ? '' : String(lastAcc));
-      localStorage.setItem(ch('lastFix'), lastFixHora == null ? '' : String(lastFixHora));
-    } catch (e) {}
-  }
-
-  function carregarUltima() {
-    try {
-      var a = parseFloat(localStorage.getItem(ch('lastLat')));
-      var o = parseFloat(localStorage.getItem(ch('lastLon')));
-      if (!isNaN(a) && !isNaN(o)) { lastLat = a; lastLon = o; }
-      var ac = parseFloat(localStorage.getItem(ch('lastAcc')));
-      if (!isNaN(ac)) lastAcc = ac;
-      var fx = parseFloat(localStorage.getItem(ch('lastFix')));
-      if (!isNaN(fx)) lastFixHora = fx;
-    } catch (e) {}
-  }
-
-  /* ---------- log ---------- */
-  function log(msg) {
-    var d = document.createElement('div');
-    d.textContent = new Date().toLocaleTimeString('pt-BR') + '  ' + msg;
-    var box = $('#log');
-    box.insertBefore(d, box.firstChild);
-    while (box.childNodes.length > 40) box.removeChild(box.lastChild);
-  }
-
-  function badge(tipo, texto) {
-    var b = $('#badgeEnvio');
-    b.className = 'badge ' + tipo;
-    b.textContent = texto;
-  }
-
-  /* ---------- renders ---------- */
-  function renderGPS(aviso) {
-    var el = $('#gpsVal');
-    if (lastLat == null) {
-      el.textContent = 'aguardando fix…';
-      $('#gpsAcc').textContent = aviso || 'watchPosition ativo ao iniciar';
-      return;
-    }
-    el.textContent = lastLat.toFixed(6) + ', ' + lastLon.toFixed(6);
-    var partes = [];
-    if (lastAcc != null) partes.push('±' + Math.round(lastAcc) + ' m');
-    if (lastFixHora) partes.push('fix ' + new Date(lastFixHora).toLocaleTimeString('pt-BR'));
-    if (aviso) partes.push(aviso);
-    $('#gpsAcc').textContent = partes.join(' · ');
-  }
-
-  function renderEnvio() {
-    $('#envioVal').textContent = ultimoEnvioHora
-      ? new Date(ultimoEnvioHora).toLocaleTimeString('pt-BR') : '—';
-    var partes = [];
-    if (qtdEnvios) partes.push(qtdEnvios + ' enviados');
-    if (rastreando && proxReenvio) {
-      partes.push('reenvio em ' + Math.max(0, Math.ceil((proxReenvio - Date.now()) / 1000)) + ' s');
-    }
-    $('#envioDet').textContent = partes.join(' · ') || (rastreando ? 'aguardando posição…' : 'parado');
-  }
-
-  /* ---------- bateria: navigator.getBattery() ---------- */
-  function iniciarBateria() {
-    if (!navigator.getBattery) {
-      $('#batVal').textContent = '—';
-      $('#batExtra').textContent = 'sem suporte neste navegador';
-      return;
-    }
-    navigator.getBattery().then(function (b) {
-      var atualizar = function () {
-        bateria = Math.round(b.level * 100);
-        carregando = b.charging;
-        $('#batVal').textContent = bateria + '%' + (carregando ? ' ⚡' : '');
-        $('#batExtra').textContent = carregando ? 'carregando' : 'em uso';
-      };
-      b.addEventListener('levelchange', atualizar);
-      b.addEventListener('chargingchange', atualizar);
-      atualizar();
-    }).catch(function () {
-      $('#batVal').textContent = '—';
-      $('#batExtra').textContent = 'erro ao ler bateria';
-    });
-  }
-
-  /* ---------- envio ao Supabase (fetch REST) ---------- */
-  function enviar(motivo) {
-    if (lastLat == null || lastLon == null || enviando) return;
-    enviando = true;
-    ultimoTentado = Date.now();
-    badge('env', 'enviando…');
-
-    var corpo = { veiculo_id: idVeiculo, lat: lastLat, lon: lastLon };
-    if (bateria != null) corpo.bateria = bateria;
-    if (CONFIG.ENVIAR_CREATED_AT) corpo.created_at = new Date().toISOString();
-
-    fetch(CONFIG.SUPABASE_URL + '/rest/v1/posicoes', {
-      method: 'POST',
-      headers: {
-        apikey: CONFIG.SUPABASE_KEY,
-        Authorization: 'Bearer ' + CONFIG.SUPABASE_KEY,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal'
-      },
-      body: JSON.stringify(corpo)
-    }).then(function (r) {
-      enviando = false;
-      if (r.ok) {
-        qtdEnvios++;
-        ultimoEnvioHora = Date.now();
-        badge('ok', 'online ✓');
-        log('✓ posição enviada (' + motivo + ')' +
-          (lastAcc != null ? ' ±' + Math.round(lastAcc) + ' m' : ''));
-      } else {
-        badge('err', 'erro ' + r.status);
-        r.text().then(function (t) {
-          log('✗ HTTP ' + r.status + ' (' + motivo + ') ' + t.slice(0, 140));
-        }).catch(function () {
-          log('✗ HTTP ' + r.status + ' (' + motivo + ')');
-        });
-      }
-      renderEnvio();
-    }).catch(function () {
-      enviando = false;
-      badge('err', 'sem conexão');
-      log('✗ rede indisponível (' + motivo + ')');
-      renderEnvio();
-    });
-  }
-
-  /* ---------- GPS: watchPosition com filtro de accuracy ---------- */
-  function iniciarGPS() {
-    if (!navigator.geolocation) {
-      $('#gpsAcc').textContent = 'sem suporte a GPS';
-      log('✗ este navegador não tem geolocalização');
-      return;
-    }
-    if (watchId != null) navigator.geolocation.clearWatch(watchId);
-    watchId = navigator.geolocation.watchPosition(function (pos) {
-      var acc = pos.coords.accuracy;
-      lastFixHora = Date.now();
-      /* filtra accuracy > 50 m se já existe posição salva */
-      if (lastLat != null && acc > CONFIG.ACC_MAX_M) {
-        renderGPS('sinal fraco ±' + Math.round(acc) + ' m — descartado');
-        return;
-      }
-      lastLat = pos.coords.latitude;
-      lastLon = pos.coords.longitude;
-      lastAcc = acc;
-      salvarUltima();
-      renderGPS();
-      if (Date.now() - ultimoTentado >= CONFIG.THROTTLE_GPS_MS) enviar('gps');
-    }, function (erro) {
-      var msgs = {
-        1: 'permissão negada — autorize a localização (Android: "permitir o tempo todo")',
-        2: 'localização indisponível no momento',
-        3: 'tempo esgotado, tentando de novo…'
-      };
-      $('#gpsAcc').textContent = msgs[erro.code] || erro.message;
-      if (erro.code === 1) log('✗ ' + msgs[1]);
-    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
-  }
-
-  /* ---------- wakeLock: tela sempre ligada ---------- */
-  function configurarWL(wl) {
-    wakeLock = wl;
-    $('#telaVal').textContent = 'sempre ligada 🔒';
-    $('#telaDet').textContent = 'a tela não vai apagar';
-    wl.addEventListener('release', function () {
-      wakeLock = null;
-      $('#telaVal').textContent = 'liberada 🔓';
-      $('#telaDet').textContent = 'wakeLock de tela';
-      if (queroTela) log('⚠ wake lock liberado pelo sistema');
-    });
-  }
-
-  function pedirTelaLigada() {
-    if (!('wakeLock' in navigator)) {
-      $('#telaVal').textContent = 'não suportado';
-      $('#telaDet').textContent = 'use Chrome/Edge recentes';
-      return;
-    }
-    navigator.wakeLock.request('screen').then(function (wl) {
-      queroTela = true;
-      configurarWL(wl);
-      log('🔒 tela sempre ligada ativa');
-    }).catch(function (e) {
-      $('#telaVal').textContent = 'falha';
-      $('#telaDet').textContent = e.name || 'erro no wakeLock';
-    });
-  }
-
-  function soltarTela() {
-    queroTela = false;
-    if (wakeLock) { wakeLock.release()['catch'](function () {}); wakeLock = null; }
-    $('#telaVal').textContent = 'liberada 🔓';
-    $('#telaDet').textContent = 'wakeLock de tela';
-  }
-
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState !== 'visible') return;
-    if (queroTela && 'wakeLock' in navigator && !wakeLock) {
-      navigator.wakeLock.request('screen').then(configurarWL)['catch'](function () {});
-    }
-    if (rastreando && lastLat != null) enviar('voltou ao 1º plano');
-  });
-
-  /* ---------- rádio: <audio> com play no click ---------- */
-  var radio = $('#radio');
-  $('#btnRadio').addEventListener('click', function () {
-    if (radio.paused) {
-      radio.play().then(function () { log('📻 rádio tocando'); })
-        .catch(function (e) { log('✗ rádio: ' + (e.message || 'falha ao tocar')); });
-      if (!queroTela) pedirTelaLigada();   // rádio ligado = tela também fica ligada
-    } else {
-      radio.pause();
-      log('📻 rádio pausado');
-    }
-  });
-  radio.addEventListener('playing', function () { $('#btnRadio').textContent = '⏹ DESLIGAR RÁDIO'; });
-  radio.addEventListener('pause',   function () { $('#btnRadio').textContent = '📻 LIGAR RÁDIO'; });
-  radio.addEventListener('error',   function () {
-    $('#btnRadio').textContent = '📻 LIGAR RÁDIO';
-    log('✗ erro no stream da rádio');
-  });
-
-  /* ---------- botão INICIAR / PARAR ---------- */
-  $('#btnIniciar').addEventListener('click', function () {
-    if (!rastreando) {
-      rastreando = true;
-      this.textContent = '⏹ PARAR';
-      this.classList.add('ativo');
-      carregarUltima();
-      if (lastLat != null) {
-        renderGPS('posição restaurada do localStorage');
-        enviar('posição salva');
-      } else {
-        badge('env', 'buscando GPS…');
-      }
-      iniciarGPS();
-      pedirTelaLigada();
-      proxReenvio = Date.now() + CONFIG.REENVIO_MS;
-      log('▶ rastreamento iniciado (' + idVeiculo + ')');
-      renderEnvio();
-    } else {
-      rastreando = false;
-      this.textContent = '▶ INICIAR';
-      this.classList.remove('ativo');
-      if (watchId != null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-      soltarTela();
-      badge('para', 'parado');
-      log('⏹ rastreamento parado');
-      renderEnvio();
-    }
-  });
-
-  /* ---------- reenvio de 25 s: mantém ONLINE mesmo se o Android
-       suspender o GPS em segundo plano (rádio tocando) ---------- */
-  setInterval(function () {
-    if (!rastreando || lastLat == null) return;
-    proxReenvio = Date.now() + CONFIG.REENVIO_MS;
-    enviar('reenvio 25 s');
-  }, CONFIG.REENVIO_MS);
-
-  setInterval(renderEnvio, 1000);
-
-  /* ---------- boot ---------- */
-  iniciarBateria();
-  carregarUltima();
-  renderGPS(lastLat != null ? 'posição salva encontrada' : '');
-  renderEnvio();
-}
-
-})();
+if(navigator.getBattery){navigator.getBattery().then(b=>{var u=()=>{bateria=Math.round(b.level*100);document.getElementById('batVal').textContent=bateria+'%';};b.addEventListener('levelchange',u);u();});}
+document.getElementById('btnIniciar').addEventListener('click',function(){
+ if(!rastreando){rastreando=true;this.textContent='⏹ PARAR';this.classList.add('ativo');iniciarGPS();log('▶ iniciado '+id);setInterval(()=>{if(rastreando&&lastLat!=null) enviar('reenvio 25s');},CONFIG.REENVIO_MS);}else{rastreando=false;this.textContent='▶ INICIAR';this.classList.remove('ativo');if(watchId!=null) navigator.geolocation.clearWatch(watchId);badge('para','parado');log('⏹ parado');}
+});
+log('Pronto. Clique INICIAR. Tem que ficar online ✓');
 </script>
 </body>
 </html>
