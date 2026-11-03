@@ -3,47 +3,85 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PALIO2 - Mapa</title>
+<title>Seus Dispositivos - PALIO2</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#007aff">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui;background:#0f0f0f}#map{height:100vh;width:100vw}
-.panel{position:absolute;top:12px;left:12px;z-index:1000;background:#fff;border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.25);width:300px;max-width:calc(100vw - 24px)}
-.row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid #eee}
-.badge{padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800} .ok{background:#00ff88;color:#000} .err{background:#ff3b30;color:#fff}
-.btns{display:flex;gap:6px;margin-top:10px} .btns button{flex:1;padding:8px;border-radius:10px;border:0;background:#111;color:#fff;font-size:12px;font-weight:700}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui;background:#f5f7fb;color:#111}
+.header{background:#007aff;color:#fff;padding:14px 16px;display:flex;justify-content:space-between;font-size:18px;font-weight:700}
+.list{background:#fff;margin:8px 0}
+.device{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #eee;cursor:pointer}
+.device-info b{display:block;font-size:15px} .device-info span{font-size:13px;color:#666}
+.btn-icon{width:44px;height:44px;border-radius:50%;border:0;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer}
+.btn-blue{background:#e6f0ff;color:#007aff} .btn-green{background:#e6f7ed;color:#0a7a33} .btn-gray{background:#f0f0f0;color:#666}
+#mapWrap{display:none;height:55vh} #map{height:100%;width:100%}
+.panel{padding:10px;background:#fff;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.panel button{padding:8px 12px;border-radius:8px;border:0;background:#111;color:#fff;font-size:12px}
+.badge{padding:3px 8px;border-radius:999px;font-size:11px} .ok{background:#00ff88} .err{background:#ff3b30;color:#fff}
 </style>
 </head>
 <body>
+<div class="header"><span>Seus Dispositivos Re...</span><span>⛶ ⋮</span></div>
+<div class="list">
+<div class="device" onclick="selectDevice('PALIO2')">
+<div class="device-info"><b>LG</b><span>LGE LM-X410.F - PALIO2</span></div>
+<div style="display:flex;gap:8px">
+<button class="btn-icon btn-blue">◎</button>
+<button class="btn-icon btn-green">📍</button>
+<button class="btn-icon btn-gray">⋯</button>
+</div>
+</div>
+<div class="device" onclick="selectDevice('master')">
+<div class="device-info"><b>master</b><span>Motorola moto g42</span></div>
+<div><button class="btn-icon btn-gray">◀</button></div>
+</div>
+</div>
+<div id="mapWrap">
 <div id="map"></div>
 <div class="panel">
-<h3>🚗 <span id="dev">PALIO2</span> <span id="conn" class="badge err">offline</span></h3>
-<div class="row"><span>Último</span><b id="last">--</b></div>
-<div class="row"><span>Pontos</span><b id="pts">0</b></div>
-<div class="row"><span>Lat,Lng</span><b id="ll">--</b></div>
-<div class="btns"><button onclick="loadData()">Atualizar</button><button onclick="center()">Centralizar</button><button onclick="clearTrail()">Limpar</button></div>
-<div style="margin-top:10px"><a id="linkR" href="rastreador.html?id=PALIO2" target="_blank">📱 Abrir Rastreador</a> - <a href="#" onclick="toggleRealtime();return false" id="rt">Realtime: ON</a></div>
-<div id="info" style="font-size:10px;color:#888;margin-top:8px"></div>
+<span id="conn" class="badge err">offline</span>
+<span id="last">--</span> | <span id="pts">0</span> pts
+<button onclick="loadData()">Atualizar</button>
+<button onclick="center()">Centralizar</button>
+<a id="linkR" href="rastreador.html?id=PALIO2" target="_blank" style="font-size:12px">Rastreador</a>
+</div>
 </div>
 <script>
-const CFG={URL:'https://jpaflbkafupwqfqfcjrv.supabase.co',KEY:'sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf',ID:new URLSearchParams(location.search).get('id')||'PALIO2'};
-const map=L.map('map').setView([-23.5,-46.6],13);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-let marker=null,poly=L.polyline([],{color:'#ff3b30',weight:4}).addTo(map),lastLatLng=null,supabaseClient=null,channel=null,realtimeOn=true;
-function info(t){document.getElementById('info').textContent=t;}
-function setConn(c,cls){const e=document.getElementById('conn');e.textContent=c;e.className='badge '+cls;}
+const CFG={URL:'https://jpaflbkafupwqfqfcjrv.supabase.co',KEY:'sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf',ID:'PALIO2'};
+let currentId='PALIO2';
+const map=L.map('map').setView([-23.5,-46.6],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+let marker=null,poly=L.polyline([],{color:'#007aff',weight:4}).addTo(map),lastLatLng=null;
+function selectDevice(id){currentId=id;CFG.ID=id;document.getElementById('mapWrap').style.display='block';document.getElementById('linkR').href='rastreador.html?id='+encodeURIComponent(id);loadData();setupRealtime();}
 async function loadData(){
-  const url=CFG.URL+'/rest/v1/posicoes?device_id=eq.'+encodeURIComponent(CFG.ID)+'&order=created_at.desc&limit=100';
-  const r=await fetch(url,{headers:{'apikey':CFG.KEY,'Authorization':'Bearer '+CFG.KEY}});
-  if(!r.ok){info('Erro '+r.status);return;}
-  const data=await r.json(); if(!data.length){info('Sem dados. Inicie rastreador');setConn('sem dados','warn');return;}
-  document.getElementById('pts').textContent=data.length;document.getElementById('last').textContent=new Date(data[0].created_at).toLocaleTimeString('pt-BR');document.getElementById('ll').textContent=data[0].lat.toFixed(5)+','+data[0].lng.toFixed(5);
-  poly.setLatLngs(data.map(d=>[d.lat,d.lng]).reverse());lastLatLng=[data[0].lat,data[0].lng];
-  if(!marker){marker=L.marker(lastLatLng).addTo(map);map.setView(lastLatLng,16);}else marker.setLatLng(lastLatLng);setConn('online','ok');info('OK '+data.length+' pts');
+  try{
+    const r=await fetch(CFG.URL+'/rest/v1/posicoes?device_id=eq.'+encodeURIComponent(CFG.ID)+'&order=created_at.desc&limit=100',{headers:{'apikey':CFG.KEY,'Authorization':'Bearer '+CFG.KEY}});
+    if(!r.ok)return;
+    const data=await r.json();
+    if(!data.length){document.getElementById('last').textContent='sem dados';return;}
+    document.getElementById('pts').textContent=data.length;
+    document.getElementById('last').textContent=new Date(data[0].created_at).toLocaleTimeString('pt-BR');
+    poly.setLatLngs(data.map(d=>[d.lat,d.lng]).reverse());
+    lastLatLng=[data[0].lat,data[0].lng];
+    if(!marker){marker=L.marker(lastLatLng).addTo(map);map.setView(lastLatLng,16);}else marker.setLatLng(lastLatLng);
+    document.getElementById('conn').textContent='online';document.getElementById('conn').className='badge ok';
+  }catch(e){}
 }
-function center(){if(lastLatLng)map.setView(lastLatLng,17);}function clearTrail(){poly.setLatLngs([]);}
-function setupRealtime(){supabaseClient=supabase.createClient(CFG.URL,CFG.KEY);channel=supabaseClient.channel('posicoes-'+CFG.ID).on('postgres_changes',{event:'INSERT',schema:'public',table:'posicoes',filter:'device_id=eq.'+CFG.ID},(p)=>{const n=p.new;const ll=[n.lat,n.lng];lastLatLng=ll;const cur=poly.getLatLngs();cur.push(ll);poly.setLatLngs(cur);if(marker)marker.setLatLng(ll);}).subscribe();}
-loadData();setupRealtime();setInterval(()=>{if(!realtimeOn)loadData();},5000);
+function center(){if(lastLatLng)map.setView(lastLatLng,17);}
+let channel=null,client=null;
+function setupRealtime(){
+  if(channel && client){client.removeChannel(channel);}
+  client=supabase.createClient(CFG.URL,CFG.KEY);
+  channel=client.channel('pos-'+CFG.ID).on('postgres_changes',{event:'INSERT',schema:'public',table:'posicoes',filter:'device_id=eq.'+CFG.ID},p=>{
+    const n=p.new;const ll=[n.lat,n.lng];lastLatLng=ll;const cur=poly.getLatLngs();cur.push(ll);poly.setLatLngs(cur);if(marker)marker.setLatLng(ll);
+  }).subscribe();
+}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}
+selectDevice('PALIO2');
 </script>
 </body>
 </html>
