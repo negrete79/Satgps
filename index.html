@@ -2,70 +2,48 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>PALIO2 - Rastreador</title>
-<meta name="theme-color" content="#00ff88">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PALIO2 - Mapa</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui;background:#0f0f0f;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
-.card{background:#1c1c1e;width:100%;max-width:400px;border-radius:24px;padding:22px;box-shadow:0 12px 40px rgba(0,0,0,.6);border:1px solid #2a2a2c}
-h2{text-align:center;font-size:22px;margin-bottom:12px}
-.row{display:flex;gap:8px;justify-content:center;margin:10px 0;flex-wrap:wrap}
-.badge{padding:6px 14px;border-radius:999px;font-size:12px;font-weight:800} .ok{background:#00ff88;color:#000} .err{background:#ff3b30;color:#fff} .warn{background:#ffcc02;color:#000}
-.stats{background:#000;border-radius:16px;padding:14px;margin:14px 0;border:1px solid #222}
-.stats div{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #151515;font-size:13px}
-.stats div:last-child{border:0} .stats b{color:#00ff88;max-width:60%;text-align:right;overflow:hidden;text-overflow:ellipsis}
-button{width:100%;padding:18px;border:0;border-radius:14px;font-size:17px;font-weight:900;cursor:pointer}
-#on{background:#00ff88;color:#000} #on:disabled{opacity:.5}
-#off{background:#2c2c2e;color:#fff;margin-top:10px}
-.log{background:#000;color:#00ff88;font-family:monospace;font-size:11px;height:130px;overflow:auto;padding:10px;border-radius:12px;border:1px solid #1a1a1a;white-space:pre-wrap}
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui;background:#0f0f0f}#map{height:100vh;width:100vw}
+.panel{position:absolute;top:12px;left:12px;z-index:1000;background:#fff;border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.25);width:300px;max-width:calc(100vw - 24px)}
+.row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid #eee}
+.badge{padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800} .ok{background:#00ff88;color:#000} .err{background:#ff3b30;color:#fff}
+.btns{display:flex;gap:6px;margin-top:10px} .btns button{flex:1;padding:8px;border-radius:10px;border:0;background:#111;color:#fff;font-size:12px;font-weight:700}
 </style>
 </head>
 <body>
-<div class="card">
-<h2>📍 PALIO2</h2>
-<div class="row"><span id="st" class="badge warn">parado</span><span id="cn" class="badge err">offline</span></div>
-<div class="stats">
-<div><span>Device</span><b id="dev">PALIO2</b></div>
-<div><span>GPS</span><b id="gps">--</b></div>
-<div><span>Precisão</span><b id="acc">--</b></div>
-<div><span>Enviados</span><b id="cnt">0</b></div>
-<div><span>Último</span><b id="last">--</b></div>
-</div>
-<button id="on" onclick="start()">▶ INICIAR RASTREIO</button>
-<button id="off" onclick="stop()">■ PARAR</button>
-<div id="log" class="log">pronto para iniciar...
-dica: deixe o celular carregando no carro
-</div>
+<div id="map"></div>
+<div class="panel">
+<h3>🚗 <span id="dev">PALIO2</span> <span id="conn" class="badge err">offline</span></h3>
+<div class="row"><span>Último</span><b id="last">--</b></div>
+<div class="row"><span>Pontos</span><b id="pts">0</b></div>
+<div class="row"><span>Lat,Lng</span><b id="ll">--</b></div>
+<div class="btns"><button onclick="loadData()">Atualizar</button><button onclick="center()">Centralizar</button><button onclick="clearTrail()">Limpar</button></div>
+<div style="margin-top:10px"><a id="linkR" href="rastreador.html?id=PALIO2" target="_blank">📱 Abrir Rastreador</a> - <a href="#" onclick="toggleRealtime();return false" id="rt">Realtime: ON</a></div>
+<div id="info" style="font-size:10px;color:#888;margin-top:8px"></div>
 </div>
 <script>
-const CFG = {
-  URL: 'https://jpaflbkafupwqfqfcjrv.supabase.co',
-  KEY: 'sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf',
-  ID: new URLSearchParams(location.search).get('id') || 'PALIO2'
-};
-let watch=null, timer=null, last=null, sent=0, wake=null;
-const $ = id => document.getElementById(id);
-function log(m){const el=$('log');const t=new Date().toLocaleTimeString('pt-BR');el.textContent=t+' '+m+'\n'+el.textContent;}
-function setStatus(s,c){$('st').textContent=s;$('cn').textContent=c;$('cn').className='badge '+(c.includes('online')?'ok':'err');}
-async function send(p){
-  last=p;
-  $('gps').textContent=p.coords.latitude.toFixed(6)+', '+p.coords.longitude.toFixed(6);
-  $('acc').textContent='±'+Math.round(p.coords.accuracy)+'m';
-  const payload={device_id:CFG.ID,lat:p.coords.latitude,lng:p.coords.longitude};
-  try{
-    const r=await fetch(CFG.URL+'/rest/v1/posicoes',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.KEY,'Authorization':'Bearer '+CFG.KEY,'Prefer':'return=minimal'},body:JSON.stringify(payload)});
-    if(r.ok){sent++;$('cnt').textContent=sent;$('last').textContent=new Date().toLocaleTimeString('pt-BR');setStatus('rastreando','online ✓');log('ok '+payload.lat.toFixed(5));}
-    else{const txt=await r.text();log('ERRO HTTP '+r.status+' '+txt.slice(0,200));setStatus('erro','sem conexão '+r.status);}
-  }catch(e){log('fetch falhou '+e.message);setStatus('erro','sem conexão - fetch falhou');}
+const CFG={URL:'https://jpaflbkafupwqfqfcjrv.supabase.co',KEY:'sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf',ID:new URLSearchParams(location.search).get('id')||'PALIO2'};
+const map=L.map('map').setView([-23.5,-46.6],13);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+let marker=null,poly=L.polyline([],{color:'#ff3b30',weight:4}).addTo(map),lastLatLng=null,supabaseClient=null,channel=null,realtimeOn=true;
+function info(t){document.getElementById('info').textContent=t;}
+function setConn(c,cls){const e=document.getElementById('conn');e.textContent=c;e.className='badge '+cls;}
+async function loadData(){
+  const url=CFG.URL+'/rest/v1/posicoes?device_id=eq.'+encodeURIComponent(CFG.ID)+'&order=created_at.desc&limit=100';
+  const r=await fetch(url,{headers:{'apikey':CFG.KEY,'Authorization':'Bearer '+CFG.KEY}});
+  if(!r.ok){info('Erro '+r.status);return;}
+  const data=await r.json(); if(!data.length){info('Sem dados. Inicie rastreador');setConn('sem dados','warn');return;}
+  document.getElementById('pts').textContent=data.length;document.getElementById('last').textContent=new Date(data[0].created_at).toLocaleTimeString('pt-BR');document.getElementById('ll').textContent=data[0].lat.toFixed(5)+','+data[0].lng.toFixed(5);
+  poly.setLatLngs(data.map(d=>[d.lat,d.lng]).reverse());lastLatLng=[data[0].lat,data[0].lng];
+  if(!marker){marker=L.marker(lastLatLng).addTo(map);map.setView(lastLatLng,16);}else marker.setLatLng(lastLatLng);setConn('online','ok');info('OK '+data.length+' pts');
 }
-async function start(){
-  try{if('wakeLock' in navigator){wake=await navigator.wakeLock.request('screen');}}catch{}
-  $('on').disabled=true;log('solicitando GPS...');setStatus('iniciando','conectando...');
-  watch=navigator.geolocation.watchPosition(p=>send(p),e=>{log('GPS ERRO: '+e.message);setStatus('erro GPS','offline');$('on').disabled=false;},{enableHighAccuracy:true,maximumAge:0,timeout:15000});
-  timer=setInterval(()=>{if(last) send(last);},5000);
-}
-function stop(){if(watch!==null)navigator.geolocation.clearWatch(watch);if(timer)clearInterval(timer);if(wake)try{wake.release()}catch{}watch=timer=wake=null;$('on').disabled=false;setStatus('parado','offline');log('parado');}
+function center(){if(lastLatLng)map.setView(lastLatLng,17);}function clearTrail(){poly.setLatLngs([]);}
+function setupRealtime(){supabaseClient=supabase.createClient(CFG.URL,CFG.KEY);channel=supabaseClient.channel('posicoes-'+CFG.ID).on('postgres_changes',{event:'INSERT',schema:'public',table:'posicoes',filter:'device_id=eq.'+CFG.ID},(p)=>{const n=p.new;const ll=[n.lat,n.lng];lastLatLng=ll;const cur=poly.getLatLngs();cur.push(ll);poly.setLatLngs(cur);if(marker)marker.setLatLng(ll);}).subscribe();}
+loadData();setupRealtime();setInterval(()=>{if(!realtimeOn)loadData();},5000);
 </script>
 </body>
 </html>
