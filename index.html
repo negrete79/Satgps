@@ -3,25 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Carro GPS</title>
+<title>SatGPS</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
 <style>
 html,body{margin:0;height:100%;background:#000}
 #map{height:100vh;width:100vw}
-.glass{background: rgba(20,20,20,0.55) !important; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15) !important; color:#fff !important;}
+.glass{background: rgba(20,20,20,0.55) !important; backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15) !important; color:#fff !important;}
 #selector{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:999;padding:5px;display:flex;gap:6px;border-radius:22px}
-#selector button{padding:9px 15px;border-radius:15px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);font-weight:700;font-size:11px}
-#selector button.ativo{background:#fff;color:#000;border-color:#fff}
-#menuBtn{position:absolute;top:12px;right:12px;z-index:1000;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px}
-#menu{position:absolute;top:58px;right:12px;z-index:1000;padding:8px;display:none;flex-direction:column;gap:6px;min-width:180px;border-radius:16px}
-#menu button{padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#ddd;font-size:12px;text-align:left}
-#followBtn{position:absolute;bottom:130px;left:50%;transform:translateX(-50%);z-index:999;padding:13px 26px;font-size:11px;font-weight:800;border-radius:30px;letter-spacing:0.5px;display:none}
+#selector button{padding:9px 15px;border-radius:15px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.08);color:#fff;font-weight:700;font-size:11px}
+#selector button.ativo{background:#fff;color:#000}
+#followBtn{position:absolute;bottom:130px;left:50%;transform:translateX(-50%);z-index:999;padding:13px 26px;font-size:11px;font-weight:800;border-radius:30px;display:none}
 #box{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:999;padding:14px 22px;text-align:center;font-family:system-ui;min-width:320px;border-radius:24px}
-#box a{color:#fff !important;text-decoration:none;display:block;margin-top:8px;font-size:12px;font-weight:800}
-#credito{margin-top:8px;font-size:9px;opacity:0.4;color:#fff}
-#line2{margin-top:6px;font-size:11px;display:flex;gap:10px;justify-content:center;align-items:center}
+#box a{color:#b6ff00 !important;text-decoration:none;display:block;margin-top:8px;font-size:13px;font-weight:900}
+#credito{margin-top:8px;font-size:9px;opacity:0.4}
+#line2{margin-top:6px;font-size:11px;display:flex;gap:10px;justify-content:center}
 #status.online{color:#4ade80} #status.offline{color:#ff5555}
 </style>
 </head>
@@ -30,11 +28,6 @@ html,body{margin:0;height:100%;background:#000}
 <div id="selector" class="glass">
 <button id="btn1" class="ativo" onclick="trocar('PALIO1')">PALIO 1</button>
 <button id="btn2" onclick="trocar('PALIO2')">PALIO 2</button>
-</div>
-<div id="menuBtn" class="glass" onclick="toggleMenu()">⋮</div>
-<div id="menu" class="glass">
-<button id="mHist" onclick="toggleHist();toggleMenu()">🚫 HISTÓRICO: OFF</button>
-<button onclick="zerar();toggleMenu()" style="color:#ff7777">🗑️ ZERAR HISTÓRICO</button>
 </div>
 <button id="followBtn" class="glass" onclick="voltar()">📍 VOLTAR AO CARRO</button>
 <div id="box" class="glass">
@@ -49,39 +42,31 @@ html,body{margin:0;height:100%;background:#000}
 </div>
 <script>
 const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
-let ATUAL="PALIO1", seguir=true, primeiro=true, verHist=false, menuAberto=false;
+let ATUAL="PALIO1", seguir=true, primeiro=true;
 const sat = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:20});
-const rua = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{maxZoom:20});
 const map = L.map('map',{layers:[sat], zoomControl:false}).setView([-20.3881,-43.7569],17);
-L.control.layers({"🛰️ SATÉLITE": sat, "🗺️ RUA": rua},{},{position:'topleft'}).addTo(map);
 let m=L.marker([-20.3881,-43.7569]).addTo(map);
-let poly=L.polyline([],{color:'#ff0000',weight:3,opacity:0.7});
-function toggleMenu(){menuAberto=!menuAberto;document.getElementById('menu').style.display=menuAberto?'flex':'none';}
-function toggleHist(){verHist=!verHist;if(verHist){poly.addTo(map);document.getElementById('mHist').innerText='👁️ HISTÓRICO: ON';}else{map.removeLayer(poly);document.getElementById('mHist').innerText='🚫 HISTÓRICO: OFF';}}
-map.on('dragstart',()=>{if(seguir){seguir=false;document.getElementById('followBtn').style.display='block';}});
-function voltar(){seguir=true;primeiro=true;document.getElementById('followBtn').style.display='none';map.flyTo(m.getLatLng(),17,{duration:1.2});}
-function trocar(c){ATUAL=c;document.getElementById('btn1').className=c=='PALIO1'?'ativo':'';document.getElementById('btn2').className=c=='PALIO2'?'ativo':'';document.getElementById('nome').innerText=c.replace('PALIO','PALIO ');poly.setLatLngs([]);primeiro=true;seguir=true;document.getElementById('followBtn').style.display='none';up();}
-async function zerar(){if(!confirm(`Zerar histórico do ${ATUAL}?`)) return;await fetch(`${U}/rest/v1/rastreador_historico?device_id=eq.${ATUAL}`,{method:'DELETE',headers:{apikey:K,Authorization:"Bearer "+K}});poly.setLatLngs([]);document.getElementById('qtd').innerText='0';}
-function tempoAtras(iso){ if(!iso) return '--'; let diff = (Date.now() - new Date(iso).getTime())/1000; if(diff < 60) return 'agora'; if(diff < 3600) return Math.floor(diff/60)+' min atrás'; if(diff < 86400) return Math.floor(diff/3600)+'h atrás'; return Math.floor(diff/86400)+'d atrás';}
+let poly=L.polyline([],{color:'#ff0000',weight:3}).addTo(map);
+function voltar(){seguir=true;primeiro=true;document.getElementById('followBtn').style.display='none';map.flyTo(m.getLatLng(),17);}
+function trocar(c){ATUAL=c;document.getElementById('btn1').className=c=='PALIO1'?'ativo':'';document.getElementById('btn2').className=c=='PALIO2'?'ativo':'';document.getElementById('nome').innerText=c.replace('PALIO','PALIO ');poly.setLatLngs([]);primeiro=true;up();}
+function tempoAtras(iso){ let diff=(Date.now()-new Date(iso).getTime())/1000; if(diff<60) return 'agora'; if(diff<3600) return Math.floor(diff/60)+' min'; return Math.floor(diff/3600)+'h'; }
 async function up(){
-  try{
-    let r=await fetch(`${U}/rest/v1/rastreador?device_id=eq.${ATUAL}&order=updated_at.desc&limit=1`,{headers:{apikey:K,Authorization:"Bearer "+K},cache:'no-store'});
-    let d=await r.json(); 
-    if(!d[0]) { console.log('Nenhum dado para',ATUAL); return;}
-    m.setLatLng([d[0].lat,d[0].lng]);
-    document.getElementById('gmap').href=`https://www.google.com/maps?q=${d[0].lat},${d[0].lng}`;
-    let diffMin = (Date.now() - new Date(d[0].updated_at).getTime())/1000/60;
-    let statusEl = document.getElementById('status');
-    let iconEl = document.getElementById('statusIcon');
-    if(diffMin <= 10){ statusEl.innerText = '● ONLINE'; statusEl.className = 'online'; iconEl.innerText = '🟢'; } else { statusEl.innerText = '● OFFLINE'; statusEl.className = 'offline'; iconEl.innerText = '🔴'; }
-    document.getElementById('tempo').innerText = tempoAtras(d[0].updated_at);
-    if(d[0].battery != null){ let b = Math.round(d[0].battery); document.getElementById('bateria').innerText = `${b>60?'🔋':'🪫'} ${b}%`; }
-    let rh=await fetch(`${U}/rest/v1/rastreador_historico?device_id=eq.${ATUAL}&order=created_at.asc&limit=500`,{headers:{apikey:K,Authorization:"Bearer "+K},cache:'no-store'});
-    let h=await rh.json(); 
-    if(h.length){ poly.setLatLngs(h.map(x=>[x.lat,x.lng])); document.getElementById('qtd').innerText=h.length; if(verHist && !map.hasLayer(poly)) poly.addTo(map); if(primeiro){map.setView([d[0].lat,d[0].lng],17);primeiro=false;} else if(seguir){map.panTo([d[0].lat,d[0].lng]);} }
-  }catch(e){console.log(e)}
+  let r=await fetch(`${U}/rest/v1/rastreador?device_id=eq.${ATUAL}&limit=1&order=updated_at.desc`,{headers:{apikey:K,Authorization:"Bearer "+K},cache:'no-store'});
+  let d=await r.json(); if(!d[0]) return;
+  m.setLatLng([d[0].lat,d[0].lng]);
+  document.getElementById('gmap').href=`https://www.google.com/maps?q=${d[0].lat},${d[0].lng}`;
+  let mins=(Date.now()-new Date(d[0].updated_at).getTime())/60000;
+  document.getElementById('status').innerText=mins<10?'● ONLINE':'● OFFLINE';
+  document.getElementById('status').className=mins<10?'online':'offline';
+  document.getElementById('statusIcon').innerText=mins<10?'🟢':'🔴';
+  document.getElementById('tempo').innerText=tempoAtras(d[0].updated_at);
+  if(d[0].battery!=null) document.getElementById('bateria').innerText=`🔋 ${Math.round(d[0].battery)}%`;
+  let rh=await fetch(`${U}/rest/v1/rastreador_historico?device_id=eq.${ATUAL}&order=created_at.asc&limit=500`,{headers:{apikey:K,Authorization:"Bearer "+K},cache:'no-store'});
+  let h=await rh.json(); if(h.length){ poly.setLatLngs(h.map(x=>[x.lat,x.lng])); document.getElementById('qtd').innerText=h.length; if(primeiro){map.setView([d[0].lat,d[0].lng],17);primeiro=false;} else if(seguir) map.panTo([d[0].lat,d[0].lng]); }
 }
-setTimeout(()=>map.invalidateSize(),500);up();setInterval(up,10000);
+map.on('dragstart',()=>{seguir=false;document.getElementById('followBtn').style.display='block';});
+setTimeout(()=>map.invalidateSize(),500); up(); setInterval(up,10000);
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js'); }
 </script>
 </body>
 </html>
