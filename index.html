@@ -1,29 +1,126 @@
-// Dentro da função saveForm() eu adicionei isso:
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frota PRO</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#fff;font-family:system-ui;height:100vh;overflow:hidden}
+#login{position:fixed;inset:0;background:#000;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{width:100%;max-width:340px;background:#151515;border:1px solid #222;border-radius:28px;padding:32px;text-align:center}
+.login-box input{width:100%;padding:14px;background:#000;border:1px solid #222;border-radius:12px;color:#fff;margin-top:10px}
+.login-box button{width:100%;padding:14px;background:#a6ff00;color:#000;border:0;border-radius:12px;font-weight:900;margin-top:16px}
+#app{display:none;height:100vh;flex-direction:column}
+#app.on{display:flex}
+.header{padding:20px;background:#141414;border-bottom:1px solid #1e1e1e}
+.stats{display:flex;gap:8px;margin-top:14px}
+.stat{background:#1a1a1a;border:1px solid #222;padding:10px 14px;border-radius:12px;font-size:11px;flex:1}
+.stat b{font-size:18px;display:block;color:#a6ff00}
+.add-btn{width:100%;margin-top:14px;padding:14px;background:#a6ff00;color:#000;border:0;border-radius:14px;font-weight:900}
+.list{flex:1;overflow-y:auto;padding:16px;background:#080808;display:flex;flex-direction:column;gap:12px}
+.car{background:#151515;border:1px solid #1e1e1e;border-radius:20px;padding:16px}
+.car-head{display:flex;justify-content:space-between;align-items:center}
+.badge{font-size:10px;padding:4px 10px;border-radius:20px;font-weight:700}
+.badge.on{background:#a6ff00;color:#000}
+.badge.off{background:#222;color:#666}
+.actions{display:flex;gap:8px;margin-top:12px}
+.btn{flex:1;padding:10px;border-radius:10px;border:1px solid #222;background:#0f0f0f;color:#fff;font-size:11px;font-weight:700}
+.btn.primary{background:#fff;color:#000}
+.btn.danger{background:rgba(255,60,60,0.1);color:#ff4444;border-color:rgba(255,60,60,0.2)}
+.btn.copy{background:rgba(166,255,0,0.1);color:#a6ff00;border-color:rgba(166,255,0,0.2)}
+#modalForm{position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(20px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+#modalForm.on{display:flex}
+.form-box{background:#151515;border:1px solid #222;border-radius:24px;padding:24px;width:100%;max-width:360px}
+.form-box input{width:100%;padding:14px;background:#000;border:1px solid #222;border-radius:12px;color:#fff;margin-top:12px}
+.form-box .row{display:flex;gap:8px;margin-top:16px}
+.form-box .row button{flex:1;padding:14px;border-radius:12px;border:0;font-weight:900}
+.btn-cancel{background:#222;color:#fff}
+.btn-save{background:#a6ff00;color:#000}
+#modalMap{position:fixed;inset:0;background:#000;z-index:100;display:none;flex-direction:column}
+#modalMap.on{display:flex}
+#map{width:100%;height:100%;flex:1;background:#111}
+.mtop{position:absolute;top:12px;left:12px;right:12px;z-index:1000;display:flex;justify-content:space-between;pointer-events:none}
+.mtop *{pointer-events:auto}
+.gbtn{background:rgba(20,20,20,0.55);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:11px 20px;border-radius:100px;font-weight:700}
+.gbtn.active{background:#fff;color:#000}
+#carFloat{position:absolute;bottom:110px;right:16px;z-index:1001;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,0.18);backdrop-filter:blur(30px);border:1px solid rgba(255,255,255,0.22);display:none;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(0,0,0,0.4);transition:0.35s;opacity:0;transform:scale(0.8)}
+#carFloat.show{display:flex;opacity:1;transform:scale(1)}
+#sheet{position:absolute;bottom:0;left:0;right:0;background:rgba(28,32,40,0.38);backdrop-filter:blur(40px) saturate(180%);border-top:1px solid rgba(255,255,255,0.12);border-radius:28px 28px 0 0;z-index:1001;transition:transform 0.4s}
+#sheet.min{transform:translateY(calc(100% - 46px))}
+.handle-area{height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+.handle{width:40px;height:5px;background:rgba(255,255,255,0.45);border-radius:10px}
+.sheet-inner{padding:0 20px 20px}
+</style>
+</head>
+<body>
+<div id="login"><div class="login-box"><h2>FROTA PRO</h2><input id="u" value="admin"><input id="p" type="password" value="1234"><button onclick="entrar()">Entrar</button><p id="err" style="color:#f44;display:none;margin-top:8px">errado</p></div></div>
+<div id="app"><div class="header"><div style="display:flex;justify-content:space-between"><b>Minha Frota</b><button onclick="sair()" style="background:#222;border:1px solid #333;color:#888;padding:6px 12px;border-radius:20px;font-size:11px">Sair</button></div><div class="stats"><div class="stat"><b id="total">0</b>Total</div><div class="stat"><b id="online">0</b>Online</div><div class="stat"><b id="battMed">0%</b>Bat média</div></div><button class="add-btn" onclick="openAdd()">+ Adicionar Veículo</button></div><div class="list" id="lista"></div></div>
+<div id="modalForm"><div class="form-box"><h3 id="formTitle">Adicionar Veículo</h3><input id="fId" placeholder="ID (ex: MOTO)" style="text-transform:uppercase"><input id="fNome" placeholder="Nome (ex: Moto do João)"><div class="row"><button class="btn-cancel" onclick="closeForm()">Cancelar</button><button class="btn-save" onclick="saveForm()">Salvar e Criar Link</button></div></div></div>
+<div id="modalMap"><div class="mtop"><button class="gbtn" onclick="fecharMapa()">← Voltar</button><div style="display:flex;gap:8px"><button id="bRua" class="gbtn active" onclick="troca('rua')">Rua</button><button id="bSat" class="gbtn" onclick="troca('sat')">Satélite</button></div></div><div id="map"></div><button id="carFloat" onclick="voltarProCarro()"><span style="font-size:26px">🚗</span></button><div id="sheet"><div class="handle-area" onclick="toggleSheet()"><div class="handle"></div><div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:6px" id="handleText">↓ recolher</div></div><div class="sheet-inner" id="sheetCont"></div></div></div>
+<script>
+const U="https://jpaflbkafupwqfqfcjrv.supabase.co";
+const K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
+let carros=JSON.parse(localStorage.getItem('carros_v2')||'null')||[{id:'PALIO2',nome:'Palio 2'},{id:'MOTO',nome:'Moto'},{id:'PALIO1',nome:'Palio 1'}];
+if(!localStorage.getItem('carros_v2')) localStorage.setItem('carros_v2',JSON.stringify(carros));
+let map=null,rL,sL,sLb,ativo=null,marks={},ultPos=null,editIndex=-1;
+function entrar(){if(u.value==='admin'&&p.value==='1234'){login.style.display='none';app.classList.add('on');localStorage.setItem('logado','1');carregar();}else err.style.display='block'}
+function sair(){localStorage.removeItem('logado');location.reload()}
+if(localStorage.getItem('logado')==='1'){login.style.display='none';app.classList.add('on')}
+function openAdd(){editIndex=-1;formTitle.innerText='Adicionar Veículo';fId.value='';fNome.value='';fId.disabled=false;modalForm.classList.add('on')}
+function openEdit(i){editIndex=i;formTitle.innerText='Editar Veículo';fId.value=carros[i].id;fNome.value=carros[i].nome;fId.disabled=true;modalForm.classList.add('on')}
+function closeForm(){modalForm.classList.remove('on')}
 async function saveForm(){
   let id=fId.value.trim().toUpperCase();
   let nome=fNome.value.trim()||id;
   if(!id) return alert('Digite ID');
   if(editIndex===-1 && carros.find(c=>c.id===id)) return alert('ID já existe');
-  
-  // SE FOR NOVO, JÁ CRIA NO SUPABASE AUTOMÁTICO
   if(editIndex===-1){
     try{
       await fetch(`${U}/rest/v1/rastreador`,{
         method:'POST',
         headers:{apikey:K,Authorization:`Bearer ${K}`,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'},
-        body: JSON.stringify({
-          device_id: id,
-          lat: -23.5505, // posição inicial São Paulo só pra abrir o mapa
-          lng: -46.6333,
-          battery: 0,
-          updated_at: new Date().toISOString()
-        })
+        body: JSON.stringify({device_id:id,lat:-23.5505,lng:-46.6333,battery:0,updated_at:new Date().toISOString()})
       });
-    }catch(e){console.log('erro ao criar no banco',e)}
+    }catch(e){}
   }
-
-  if(editIndex===-1) carros.push({id,nome});
-  else carros[editIndex]={id,nome};
+  if(editIndex===-1) carros.push({id,nome}); else carros[editIndex]={id,nome};
   localStorage.setItem('carros_v2',JSON.stringify(carros));
   closeForm(); carregar();
 }
+function excluir(i){let c=carros[i];let conf=prompt(`SEGURANÇA: Para excluir "${c.id}" digite o ID:`);if(conf===null)return;if(conf.toUpperCase()!==c.id){alert('ID não confere');return;}if(!confirm(`Excluir ${c.id}?`))return;carros.splice(i,1);localStorage.setItem('carros_v2',JSON.stringify(carros));carregar();}
+function copiar(l){navigator.clipboard.writeText(l);alert('Link copiado: '+l)}
+function initMap(){if(map){map.invalidateSize();return;}map=L.map('map',{zoomControl:false}).setView([-24.5,-48.8],10);rL=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);sL=L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:20});sLb=L.tileLayer('https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}',{maxZoom:20});L.control.zoom({position:'bottomright'}).addTo(map);map.on('movestart',()=>{if(ultPos&&map.distance(map.getCenter(),ultPos)>80)document.getElementById('carFloat').classList.add('show')})}
+function voltarProCarro(){if(ultPos){map.flyTo(ultPos,18,{animate:true,duration:1.2});document.getElementById('carFloat').classList.remove('show')}}
+function troca(m){if(!map)return;if(m==='sat'){map.removeLayer(rL);sL.addTo(map);sLb.addTo(map);bSat.classList.add('active');bRua.classList.remove('active')}else{map.removeLayer(sL);map.removeLayer(sLb);rL.addTo(map);bRua.classList.add('active');bSat.classList.remove('active')}}
+function toggleSheet(){let s=document.getElementById('sheet');s.classList.toggle('min');handleText.innerText=s.classList.contains('min')?'↑ ver detalhes':'↓ recolher'}
+function abrirMapa(id){ativo=id;modalMap.classList.add('on');document.getElementById('carFloat').classList.remove('show');setTimeout(()=>{initMap();let d=window._dados?.find(x=>x.device_id.toUpperCase()===id);if(d&&d.lat){ultPos=L.latLng(+d.lat,+d.lng);map.setView(ultPos,17);if(!marks[id])marks[id]=L.marker(ultPos).addTo(map);else marks[id].setLatLng(ultPos);}map.invalidateSize()},200)}
+function fecharMapa(){modalMap.classList.remove('on');ativo=null}
+async function carregar(){
+  try{
+    const res=await fetch(`${U}/rest/v1/rastreador?order=updated_at.desc`,{headers:{apikey:K,Authorization:`Bearer ${K}`}});
+    const dados=await res.json();window._dados=dados;
+    let html='';let on=0;let soma=0;let qtd=0;
+    carros.forEach((car,i)=>{
+      let d=dados.find(x=>x.device_id.toUpperCase()===car.id);
+      let online=d?Date.now()-new Date(d.updated_at).getTime()<120000:false;
+      if(online)on++;
+      let bat=d?.battery!=null?parseInt(d.battery):null;
+      if(bat!=null){soma+=bat;qtd++}
+      let link=`https://negrete79.github.io/Satgps/rastreador.html?id=${car.id}`;
+      html+=`<div class="car"><div class="car-head"><div><div style="font-weight:900">${car.nome}</div><div style="font-size:11px;color:#666">ID: ${car.id}</div></div><span class="badge ${online?'on':'off'}">${online?'● ONLINE':'○ OFF'}</span></div><div style="font-size:12px;color:#888;margin:8px 0">🔋 ${bat!=null?bat+'%':'--'} • ${d?new Date(d.updated_at).toLocaleTimeString('pt-BR'):'sem sinal'}</div><div class="actions"><button class="btn primary" onclick="abrirMapa('${car.id}')">📍 Mapa no painel</button><button class="btn copy" onclick="window.open('${link}','_blank')">🔗 Abrir Mapa</button></div><div class="actions"><button class="btn" onclick="openEdit(${i})">✏️ Editar</button><button class="btn danger" onclick="excluir(${i})">🗑️ Excluir</button><button class="btn" onclick="copiar('${link}')">📋 Copiar Link</button></div></div>`;
+      if(ativo===car.id&&d){
+        sheetCont.innerHTML=`<div style="display:flex;justify-content:space-between"><div><b style="font-size:18px">${car.nome} - ${bat!=null?bat+'%':''}</b><br><span style="font-size:11px;color:#aaa">${car.id} • ${new Date(d.updated_at).toLocaleString('pt-BR')}</span></div><div style="font-size:32px;font-weight:900;color:#a6ff00">${bat!=null?bat+'%':''}</div></div><div style="height:4px;background:rgba(255,255,255,0.15);border-radius:10px;margin:12px 0"><div style="height:100%;width:${bat||0}%;background:#a6ff00"></div></div><div style="display:flex;gap:10px"><button class="gbtn" style="flex:1;background:rgba(255,255,255,0.08)" onclick="voltarProCarro()">🎯 Carro</button><button class="gbtn" style="flex:1;background:#a6ff00;color:#000;border:0" onclick="window.open('https://maps.google.com/?q=${d.lat},${d.lng}','_blank')">Google</button></div>`;
+      }
+    });
+    lista.innerHTML=html||"<p style='text-align:center;color:#555;margin-top:40px'>Nenhum veículo</p>";
+    total.innerText=carros.length;online.innerText=on;battMed.innerText=qtd?Math.round(soma/qtd)+'%':'--';
+  }catch(e){lista.innerHTML='Erro: '+e.message}
+}
+setInterval(carregar,6000);
+if(localStorage.getItem('logado')==='1')carregar();
+</script>
+</body>
+</html>
