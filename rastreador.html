@@ -1,37 +1,91 @@
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Rastreador</title><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><style>
-*{box-sizing:border-box;margin:0}body{margin:0;background:#000}#map{height:100vh;width:100vw}
-.sheet{position:fixed;bottom:0;left:0;right:0;background:rgba(17,17,17,.92);backdrop-filter:blur(24px);border-top:1px solid #333;border-radius:24px 24px 0 0;padding:16px;z-index:999;transition:.3s}
-.bar{width:40px;height:4px;background:#333;border-radius:99px;margin:0 auto 10px}
-.hide{transform:translateY(90%)}.btnUber{position:fixed;bottom:110px;left:50%;transform:translateX(-50%);background:#fff;color:#000;border-radius:999px;padding:12px 20px;font-weight:800;z-index:1000;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5)}
-</style></head><body>
-<div id="map"></div>
-<button id="btnExp" class="btnUber" onclick="toggleSheet()">🔍 Explorar mapa</button>
-<div id="sheet" class="sheet"><div class="bar" onclick="toggleSheet()"></div><div style="display:flex;justify-content:space-between"><b id="nome" style="font-size:20px;color:#fff">Carregando...</b><span id="bat" style="color:#7FFF00">🔋 90%</span></div><div id="info" style="opacity:.7;color:#fff;margin:6px 0;font-size:13px"></div><div style="display:flex;gap:8px;margin-top:10px"><button onclick="trilha=!trilha;alert(trilha?'Trilha ON':'Trilha OFF')" style="flex:1;background:#1c1c1c;color:#fff;border:1px solid #333;border-radius:12px;padding:12px">🛣️ Trilha</button><button onclick="centralizar()" style="flex:1;background:#7FFF00;color:#000;border:0;border-radius:12px;padding:12px;font-weight:800">📍 Centralizar</button><button onclick="location.href='index.html'" style="flex:1;background:#1c1c1c;color:#fff;border:1px solid #333;border-radius:12px;padding:12px">🏠 Painel</button></div></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
-const SUPA_URL="https://fdyrlekqkqgqjxbgfuxl.supabase.co";
-const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkeXJsZXFrcWtncWp4YmdmdXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM0MjU5ODcsImV4cCI6MjA3OTAwMTk4N30.qQl2h2-3T1P6X8Y9Z0A1B2C3D4E5F6G7H8I9J0K1L2M3N";
-const hdr={apikey:SUPA_KEY,Authorization:`Bearer ${SUPA_KEY}`};
-let ID=new URLSearchParams(location.search).get('id')||'PALIO2';
-ID=ID.toUpperCase();
-let map=L.map('map').setView([-24.12,-48.345],15);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{opacity:.6}).addTo(map);
-let mk=null,trilha=false;
-function toggleSheet(){let s=document.getElementById('sheet');let b=document.getElementById('btnExp');s.classList.toggle('hide');b.style.display=s.classList.contains('hide')?'block':'none';}
-function centralizar(){if(mk) map.setView(mk.getLatLng(),17);}
-async function load(){
- let r=await fetch(`${SUPA_URL}/rest/v1/rastreador?device_id=ilike.${ID}&select=*`,{headers:hdr});
- let j=await r.json(); let v=j[0]; if(!v){document.getElementById('nome').innerText='Não encontrado: '+ID; return;}
- let lat=v.lat||-24.12, lng=v.lng||-48.345;
- let bat=v.battery; if(!bat||bat==0) bat=90;
- if(!mk){mk=L.marker([lat,lng]).addTo(map);}else{mk.setLatLng([lat,lng]);}
- map.setView([lat,lng],map.getZoom());
- document.getElementById('nome').innerText=(v.nome||v.device_id).toUpperCase();
- document.getElementById('bat').innerText='🔋 '+bat+'%';
- document.getElementById('info').innerText=`${v.device_id} • há ${Math.round((Date.now()-new Date(v.updated_at))/60000)}min • ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-}
-load(); setInterval(load,10000);
-let startY=0; document.getElementById('sheet').addEventListener('touchstart',e=>startY=e.touches[0].clientY);
-document.getElementById('sheet').addEventListener('touchend',e=>{let dy=e.changedTouches[0].clientY-startY; if(dy>60) toggleSheet(); if(dy<-60){document.getElementById('sheet').classList.remove('hide');document.getElementById('btnExp').style.display='none';}});
-</script></body></html>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rastreador</title>
+<style>
+html,body{margin:0;height:100%;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:monospace;overflow:hidden}
+#h{font-size:70px;font-weight:bold;color:#0a0a0a}
+#clima{font-size:34px;margin-top:10px;color:#0a0a0a}
+#temp{font-size:11px;color:#151515;margin-top:5px;text-align:center;max-width:90vw}
+#d{font-size:11px;color:#0a0a0a;margin-top:15px}
+#id{font-size:12px;color:#111;margin-top:20px}
+/* player invisível mas existe */
+#radio{position:fixed;bottom:-100px;left:0;width:1px;height:1px;opacity:0.01}
+</style>
+</head>
+<body>
+<div id="h">--:--</div>
+<div id="clima">--</div>
+<div id="temp">toque na tela para iniciar<br>rádio + rastreio</div>
+<div id="d">--/--</div>
+<div id="id"></div>
+
+<audio id="radio" controls autoplay loop preload="auto"></audio>
+
+<script>
+const DEVICE_ID = new URLSearchParams(location.search).get('id') || 'PALIO1';
+document.getElementById('id').innerText = DEVICE_ID;
+const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
+let BAT=0;
+navigator.getBattery?.().then(b=>{const u=()=>{BAT=Math.round(b.level*100)};b.addEventListener('levelchange',u);u();});
+
+function clock(){document.getElementById('h').innerText=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});document.getElementById('d').innerText=new Date().toLocaleDateString('pt-BR');}
+setInterval(clock,1000);clock();
+
+async function clima(lat,lon){try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);const j=await r.json();document.getElementById('clima').innerText=Math.round(j.current_weather.temperature)+"°C";}catch(e){}}
+
+let ultimo=0;
+let audio = document.getElementById('radio');
+// SUA RÁDIO SERTANEJA POP - toca infinito
+const RADIO_URL = "https://srv3.soundstream.com.br/listen/sertanejapop/radio.mp3";
+audio.src = RADIO_URL;
+audio.loop = true;
+audio.volume = 0.7;
+
+document.body.onclick=async()=>{
+  // Fullscreen + tela ligada
+  try{document.documentElement.requestFullscreen?.();}catch(e){}
+  try{await navigator.wakeLock.request('screen');}catch(e){}
+  
+  // Toca rádio - truque pra Android deixar em segundo plano
+  try{
+    await audio.play();
+    if('mediaSession' in navigator){
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Sertaneja Pop - '+DEVICE_ID,
+        artist: 'SatGPS Ao Vivo',
+        album: 'Não feche este app'
+      });
+      navigator.mediaSession.setActionHandler('play', ()=>audio.play());
+      navigator.mediaSession.setActionHandler('pause', ()=>audio.play()); // não deixa pausar
+    }
+  }catch(e){}
+
+  const enviar=async(lat,lon)=>{
+    if(Date.now()-ultimo<30000)return;
+    ultimo=Date.now();
+    clima(lat,lon);
+    document.getElementById('temp').innerText=`${DEVICE_ID} ${BAT}% | ${new Date().toLocaleTimeString('pt-BR')} | RÁDIO ON - ${lat.toFixed(4)},${lon.toFixed(4)}`;
+    
+    // Envia rastreio
+    await fetch(`${U}/rest/v1/rastreador`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify({device_id:DEVICE_ID,lat:lat,lng:lon,battery:BAT,updated_at:new Date().toISOString()})});
+    await fetch(`${U}/rest/v1/rastreador_historico`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},body:JSON.stringify({device_id:DEVICE_ID,lat:lat,lng:lon,battery:BAT})}).catch(()=>{});
+  };
+
+  navigator.geolocation.getCurrentPosition(p=>enviar(p.coords.latitude,p.coords.longitude),null,{enableHighAccuracy:true});
+  navigator.geolocation.watchPosition(p=>enviar(p.coords.latitude,p.coords.longitude),null,{enableHighAccuracy:true,maximumAge:0});
+  
+  // Se a rádio cair, reconecta sozinha
+  audio.addEventListener('error', ()=>{setTimeout(()=>{audio.src=RADIO_URL; audio.play().catch(()=>{});}, 3000);});
+  audio.addEventListener('ended', ()=>{audio.src=RADIO_URL; audio.play().catch(()=>{});}); // loop perpétuo
+};
+
+// Mantém vivo quando minimiza
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='visible'){audio.play().catch(()=>{});}
+});
+</script>
+</body>
+</html>
