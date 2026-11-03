@@ -2,38 +2,47 @@
 <html lang="pt-br">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Frota - Mapa</title>
+<title>Frota</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>
-body{margin:0;font-family:sans-serif;background:#111;color:#fff}
-#map{height:65vh;width:100%}
-#lista{padding:10px}
-.item{padding:10px;margin:5px 0;border-radius:8px;background:#222;display:flex;justify-content:space-between}
-.online{border-left:5px solid #0f0}
-.offline{border-left:5px solid #f00}
-b{color:#fff}
-</style>
+<style>body{margin:0;font-family:sans-serif;background:#111;color:#fff}#map{height:65vh}#lista{padding:10px}.item{padding:12px;margin:6px 0;border-radius:10px;background:#222;display:flex;justify-content:space-between}.online{border-left:6px solid #0f0}.offline{border-left:6px solid #f00}</style>
 </head>
 <body>
 <div id="map"></div>
-<div id="lista"><h3>Carregando frota...</h3></div>
-
-<script type="module">
-import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
-const sup=createClient("https://wzjhyoyggthasgjygcvo.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6amh5b3lnZ3RoYXNnanlnY3ZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjUxMTMsImV4cCI6MjA3ODY0MTExM30.k1af6Xy2MoFihd3wBOaN2vE-EWWv2ewG2y5Gwu1I5yVw")
-
-const LIMITE_ONLINE = 10*60*1000 // 10 MINUTOS - não fica offline à toa
-
+<div id="lista"><h3 id="st">Carregando frota...</h3></div>
+<script>
+const URL="https://wzjhyoyggthasgjygcvo.supabase.co/rest/v1/posicoes?select=*&order=created_at.desc&limit=500"
+const KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6amh5b3lnZ3RoYXNnanlnY3ZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjUxMTMsImV4cCI6MjA3ODY0MTExM30.k1af6Xy2MoFihd3wBOaN2vE-EWWv2ewG2y5Gwu1I5yVw"
+const LIMITE=10*60*1000
 const map=L.map('map').setView([-24.7,-48.0],13)
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(map)
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{opacity:0.4}).addTo(map)
-
 let markers={}
-
 async function carregar(){
-  const {data,error}=await sup.from("posicoes").select("*").order("created_at",{ascending:false}).limit(500)
-  if(error){ document.getElementById('lista').innerHTML=error.message; return }
-  
-  // agrupa por veiculo - pega ultima posição
-  let veiculos
+  try{
+    let r=await fetch(URL,{headers:{apikey:KEY,Authorization:'Bearer '+KEY}})
+    let data=await r.json()
+    if(!Array.isArray(data)) throw new Error(JSON.stringify(data))
+    let veiculos={}
+    data.forEach(p=>{ if(!veiculos[p.veiculo_id]) veiculos[p.veiculo_id]={...p,pts:0} })
+    data.forEach(p=>{ if(veiculos[p.veiculo_id]) veiculos[p.veiculo_id].pts++ })
+    let html=""
+    for(let id in veiculos){
+      let v=veiculos[id]
+      let diff=Date.now()-new Date(v.created_at).getTime()
+      let off=diff>LIMITE
+      let txt=off?`${Math.round(diff/60000)} min atrás`:'agora'
+      html+=`<div class="item ${off?'offline':'online'}" onclick="map.setView([${v.lat},${v.lon}],17)"><div><b>${id}</b> - ${v.pts} pts - ${off?'OFFLINE':'ONLINE'}<br><small>${v.bateria||0}% - ${txt}</small></div><div>${off?'🔴':'🟢'}</div></div>`
+      if(markers[id]) map.removeLayer(markers[id])
+      markers[id]=L.marker([v.lat,v.lon]).addTo(map).bindPopup(`${id}<br>${v.bateria}%<br>${txt}`)
+    }
+    document.getElementById('lista').innerHTML=html||"Vazio - nenhum ponto no banco"
+    if(Object.keys(veiculos).length>0) map.setView([Object.values(veiculos)[0].lat,Object.values(veiculos)[0].lon],16)
+  }catch(e){
+    document.getElementById('st').innerText="Erro: "+e.message
+  }
+}
+carregar(); setInterval(carregar,15000)
+</script>
+</body>
+</html>
