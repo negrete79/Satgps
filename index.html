@@ -25,15 +25,36 @@ body{background:#000;color:#fff;font-family:system-ui;height:100vh;overflow:hidd
 
 #modal{position:fixed;inset:0;background:#000;z-index:100;display:none;flex-direction:column}
 #modal.on{display:flex}
-#map{width:100%;height:60vh;background:#111}
-.mtop{position:absolute;top:10px;left:10px;right:10px;z-index:1000;display:flex;justify-content:space-between}
-.gbtn{background:rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:10px 16px;border-radius:100px;font-weight:700;backdrop-filter:blur(20px)}
+#map{width:100%;height:100%;flex:1;background:#111}
+.mtop{position:absolute;top:10px;left:10px;right:10px;z-index:1000;display:flex;justify-content:space-between;pointer-events:none}
+.mtop *{pointer-events:auto}
+.gbtn{background:rgba(0,0,0,0.45);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:10px 18px;border-radius:100px;font-weight:700}
 .gbtn.active{background:#fff;color:#000}
 
-/* BARRA VIDRO CLARO - CORRIGIDO DO SEU PRINT */
-#sheet{background:rgba(28,28,28,0.9);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-top:1px solid rgba(255,255,255,0.12);border-radius:28px 28px 0 0;margin-top:-28px;z-index:1001;padding:14px 20px 20px;min-height:200px;transition:0.35s cubic-bezier(0.32,0.72,0,1)}
-#sheet.up{transform:translateY(-30vh)}
-.handle{width:40px;height:5px;background:rgba(255,255,255,0.3);border-radius:10px;margin:0 auto 12px}
+#btnRecenter{position:absolute;bottom:100px;right:16px;z-index:1001;background:rgba(0,0,0,0.6);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.15);color:#fff;width:48px;height:48px;border-radius:50%;display:none;align-items:center;justify-content:center;font-size:22px}
+#btnRecenter.show{display:flex}
+
+/* BARRA AGORA FUMÊ CLARO TRANSPARENTE - NÃO PRETA */
+#sheet{
+position:absolute;
+bottom:0;left:0;right:0;
+background:rgba(35,35,35,0.32);
+backdrop-filter:blur(40px) saturate(180%);
+-webkit-backdrop-filter:blur(40px) saturate(180%);
+border-top:1px solid rgba(255,255,255,0.18);
+border-radius:28px 28px 0 0;
+z-index:1001;
+padding:0;
+box-shadow:0 -10px 40px rgba(0,0,0,0.2);
+transition:transform 0.4s cubic-bezier(0.32,0.72,0,1);
+transform:translateY(0);
+}
+#sheet.min{transform:translateY(calc(100% - 46px))}
+#sheet.mid{transform:translateY(45%)}
+.handle-area{height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+.handle{width:44px;height:5px;background:rgba(255,255,255,0.5);border-radius:10px}
+.handle-text{font-size:10px;color:rgba(255,255,255,0.5);margin-top:6px;letter-spacing:0.5px}
+.sheet-inner{padding:0 20px 20px}
 </style>
 </head>
 <body>
@@ -41,18 +62,15 @@ body{background:#000;color:#fff;font-family:system-ui;height:100vh;overflow:hidd
 <div id="login">
 <div class="login-box">
 <h2>FROTA</h2>
-<p style="color:#666;font-size:12px;margin:8px 0">login para entrar</p>
-<input id="u" placeholder="usuario" value="admin">
-<input id="p" type="password" placeholder="senha" value="1234">
+<input id="u" value="admin"><input id="p" type="password" value="1234">
 <button onclick="entrar()">Entrar</button>
-<p style="color:#444;font-size:10px;margin-top:10px">admin / 1234</p>
-<p id="err" style="color:#ff4444;font-size:12px;display:none;margin-top:8px">senha errada</p>
+<p id="err" style="color:#f44;display:none;margin-top:8px">errado</p>
 </div>
 </div>
 
 <div id="app">
 <div class="top">
-<b>Minha Frota <span id="cnt" style="background:#a6ff00;color:#000;padding:2px 8px;border-radius:20px;font-size:11px">0</span></b>
+<b>Frota <span id="cnt" style="background:#a6ff00;color:#000;padding:2px 8px;border-radius:20px;font-size:11px">0</span></b>
 <div class="add"><input id="novoId" placeholder="Ex: MOTO"><button onclick="addCar()">ADD</button></div>
 </div>
 <div class="list" id="lista"></div>
@@ -64,9 +82,14 @@ body{background:#000;color:#fff;font-family:system-ui;height:100vh;overflow:hidd
 <div style="display:flex;gap:6px"><button id="bRua" class="gbtn active" onclick="troca('rua')">Rua</button><button id="bSat" class="gbtn" onclick="troca('sat')">Satélite</button></div>
 </div>
 <div id="map"></div>
-<div id="sheet">
-<div class="handle" onclick="sheet.classList.toggle('up')" style="cursor:pointer"></div>
-<div id="sheetCont" style="color:#fff">Carregando...</div>
+<button id="btnRecenter" onclick="voltarProCarro()">🎯</button>
+
+<div id="sheet" class="mid">
+<div class="handle-area" onclick="toggleSheet()">
+<div class="handle"></div>
+<div class="handle-text" id="handleText">↑ Toque para expandir • ↓ recolher mapa</div>
+</div>
+<div class="sheet-inner" id="sheetCont"></div>
 </div>
 </div>
 
@@ -74,86 +97,101 @@ body{background:#000;color:#fff;font-family:system-ui;height:100vh;overflow:hidd
 const URL_SUPA="https://jpaflbkafupwqfqfcjrv.supabase.co";
 const KEY="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
 let carros=JSON.parse(localStorage.getItem('carros')||'["PALIO1","PALIO2","MOTO"]');
-let map=null,rL,sL,sLb,ativo=null,marks={};
+let map=null,rL,sL,sLb,ativo=null,marks={},ultimaPos=null,sheetState='mid';
 
-function entrar(){
-  if(u.value==="admin" && p.value==="1234"){
-    login.style.display="none";
-    app.classList.add("on");
-    localStorage.setItem("logado","1");
-    carregar();
-  }else{err.style.display="block"}
-}
+function entrar(){if(u.value==="admin"&&p.value==="1234"){login.style.display="none";app.classList.add("on");localStorage.setItem("logado","1");carregar();}else err.style.display="block"}
 if(localStorage.getItem("logado")==="1"){login.style.display="none";app.classList.add("on")}
 
 function initMap(){
   if(map){map.invalidateSize();return;}
   map=L.map('map',{zoomControl:false}).setView([-24.5,-48.8],10);
   rL=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-  sL=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
-  sLb=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
+  sL=L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:20});
+  sLb=L.tileLayer('https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}',{maxZoom:20});
   L.control.zoom({position:'bottomright'}).addTo(map);
+  map.on('movestart',()=>{
+    if(ultimaPos){
+      const c=map.getCenter();
+      if(map.distance(c,ultimaPos)>50) document.getElementById('btnRecenter').classList.add('show');
+    }
+  });
 }
-function troca(m){
-  if(!map) return;
-  if(m==="sat"){map.removeLayer(rL);sL.addTo(map);sLb.addTo(map);bSat.classList.add("active");bRua.classList.remove("active")}
-  else{map.removeLayer(sL);map.removeLayer(sLb);rL.addTo(map);bRua.classList.add("active");bSat.classList.remove("active")}
-  setTimeout(()=>map.invalidateSize(),100);
+function voltarProCarro(){if(ultimaPos){map.setView(ultimaPos,18,{animate:true});document.getElementById('btnRecenter').classList.remove('show'); sheet.classList.remove('min'); sheet.classList.add('mid'); sheetState='mid'; handleText.innerText='↑ Toque para expandir • ↓ recolher mapa';}}
+
+function troca(m){if(!map) return; if(m==="sat"){map.removeLayer(rL);sL.addTo(map);sLb.addTo(map);bSat.classList.add("active");bRua.classList.remove("active")}else{map.removeLayer(sL);map.removeLayer(sLb);rL.addTo(map);bRua.classList.add("active");bSat.classList.remove("active")} setTimeout(()=>map.invalidateSize(),100);}
+
+function toggleSheet(){
+  if(sheetState==='mid'){sheet.classList.remove('mid');sheet.classList.remove('min');sheetState='full';handleText.innerText='↓ Toque para recolher';}
+  else if(sheetState==='full'){sheet.classList.add('min');sheet.classList.remove('mid');sheetState='min';handleText.innerText='↑ Ver detalhes do carro';}
+  else{sheet.classList.add('mid');sheet.classList.remove('min');sheetState='mid';handleText.innerText='↑ Expandir • ↓ Ver mapa inteiro';}
 }
+
 function abrir(id){
   ativo=id;
   modal.classList.add("on");
+  sheet.classList.remove('min');
+  sheet.classList.add('mid');
+  sheetState='mid';
+  document.getElementById('btnRecenter').classList.remove('show');
   setTimeout(()=>{
     initMap();
     const d=window._dados?.find(x=>x.device_id.toUpperCase()===id);
     if(d&&d.lat){
       const pos=[+d.lat,+d.lng];
-      map.setView(pos,16);
+      ultimaPos=L.latLng(pos);
+      map.setView(pos,17);
       if(!marks[id]) marks[id]=L.marker(pos).addTo(map);
       else marks[id].setLatLng(pos);
     }
     map.invalidateSize();
   },200);
 }
-function fechar(){modal.classList.remove("on");sheet.classList.remove("up");ativo=null}
+function fechar(){modal.classList.remove("on");ativo=null}
 
 function addCar(){const id=novoId.value.trim().toUpperCase();if(!id)return;if(carros.includes(id))return alert("Ja existe");carros.push(id);localStorage.setItem("carros",JSON.stringify(carros));novoId.value="";carregar();}
-function copiar(t){navigator.clipboard.writeText(t);alert("Copiado: "+t)}
+function copiar(t){navigator.clipboard.writeText(t);alert("Copiado")}
 
 async function carregar(){
   try{
     const res=await fetch(`${URL_SUPA}/rest/v1/rastreador?order=updated_at.desc`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});
     const dados=await res.json(); window._dados=dados;
-    let html=""; let on=0;
+    let html="";
     carros.forEach(id=>{
       const d=dados.find(x=>x.device_id.toUpperCase()===id);
       const online=d?Date.now()-new Date(d.updated_at).getTime()<120000:false;
-      if(online) on++;
       const bat=d?.battery!=null?parseInt(d.battery):0;
-      const link=`https://negrete79.github.io/Satgps/rastreador.html?id=${id}`;
-      html+=`<div class="car" onclick="abrir('${id}')"><div style="display:flex;justify-content:space-between"><div><b>${id}</b> <span style="font-size:10px;background:${online?'#a6ff00':'#333'};color:${online?'#000':'#888'};padding:3px 8px;border-radius:20px">${online?'ONLINE':'OFFLINE'}</span><br><span style="font-size:11px;color:#666">${bat}% bateria</span></div><span>›</span></div><div style="font-size:10px;color:#555;background:#000;border:1px solid #1a1a1a;padding:6px;border-radius:8px;margin-top:8px;display:flex;justify-content:space-between"><span style="overflow:hidden;text-overflow:ellipsis">${link}</span><b style="color:#a6ff00;margin-left:8px" onclick="event.stopPropagation();copiar('${link}')">COPIAR</b></div></div>`;
+      html+=`<div class="car" onclick="abrir('${id}')"><b>${id}</b> <span style="font-size:10px;background:${online?'#a6ff00':'#333'};color:${online?'#000':'#888'};padding:3px 8px;border-radius:20px">${online?'ONLINE':'OFFLINE'}</span> ${bat}%</div>`;
       if(ativo===id && d){
         sheetCont.innerHTML=`
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <div><b style="font-size:20px">${id}</b> <span style="font-size:11px;background:rgba(166,255,0,0.15);border:1px solid rgba(166,255,0,0.3);color:#a6ff00;padding:4px 8px;border-radius:20px">${online?'● ONLINE':'○ OFFLINE'}</span><br><span style="font-size:11px;color:#888">${new Date(d.updated_at).toLocaleString('pt-BR')}</span></div>
-            <div style="text-align:right"><div style="font-size:30px;font-weight:900;color:${bat<20?'#ff4444':'#a6ff00'}">${bat}%</div><div style="font-size:9px;color:#666">BATERIA</div></div>
+            <div><b style="font-size:20px">${id}</b> <span style="font-size:11px;background:rgba(166,255,0,0.2);border:1px solid rgba(166,255,0,0.4);color:#a6ff00;padding:4px 8px;border-radius:20px">● ONLINE</span><br><span style="font-size:11px;color:#ddd;text-shadow:0 1px 2px rgba(0,0,0,0.8)">${new Date(d.updated_at).toLocaleString('pt-BR')}</span></div>
+            <div style="text-align:right"><div style="font-size:32px;font-weight:900;color:#a6ff00;text-shadow:0 2px 10px rgba(166,255,0,0.4)">${bat}%</div><div style="font-size:9px;color:#ccc">BATERIA</div></div>
           </div>
-          <div style="height:4px;background:#222;border-radius:10px;margin:12px 0"><div style="height:100%;width:${bat}%;background:#a6ff00"></div></div>
+          <div style="height:4px;background:rgba(255,255,255,0.2);border-radius:10px;margin:12px 0"><div style="height:100%;width:${bat}%;background:#a6ff00"></div></div>
           <div style="display:flex;gap:8px">
-            <button class="gbtn" style="flex:1;background:rgba(255,255,255,0.08)" onclick="fechar()">← Voltar</button>
-            <button class="gbtn" style="flex:1;background:rgba(255,255,255,0.08)" onclick="map.setView([${d.lat},${d.lng}],17)">🎯 Explorar</button>
+            <button class="gbtn" style="flex:1" onclick="fechar()">← Voltar</button>
+            <button class="gbtn" style="flex:1" onclick="voltarProCarro()">🎯 Carro</button>
             <button class="gbtn" style="flex:1;background:#a6ff00;color:#000" onclick="window.open('https://maps.google.com/?q=${d.lat},${d.lng}','_blank')">📍 Google</button>
           </div>
-          <p style="font-size:10px;color:#555;text-align:center;margin-top:10px">↕️ Toque na barrinha pra expandir / recolher</p>
         `;
       }
     });
-    lista.innerHTML=html||"<p style='color:#555;text-align:center'>Nenhum carro</p>";
+    lista.innerHTML=html;
     cnt.innerText=carros.length;
   }catch(e){lista.innerHTML="Erro: "+e.message}
 }
 setInterval(carregar,6000);
 if(localStorage.getItem("logado")==="1") carregar();
+
+// gesto de arrastar
+let startY=0;
+sheet.addEventListener('touchstart',e=>startY=e.touches[0].clientY);
+sheet.addEventListener('touchend',e=>{
+  let endY=e.changedTouches[0].clientY;
+  let diff=startY-endY;
+  if(diff>50) toggleSheet(); // arrasta pra cima expande
+  if(diff<-50){sheet.classList.add('min'); sheetState='min'; handleText.innerText='↑ Ver detalhes';}
+});
 </script>
 </body>
 </html>
