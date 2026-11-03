@@ -6,7 +6,7 @@
 <title>Carro GPS</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link rel="manifest" href="manifest.json?v=11">
+<link rel="manifest" href="manifest.json?v=12">
 <meta name="theme-color" content="#000000">
 <style>
 html,body{margin:0;height:100%;background:#000}
@@ -18,7 +18,7 @@ html,body{margin:0;height:100%;background:#000}
 #menuBtn{position:absolute;top:12px;right:12px;z-index:1000;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px}
 #menu{position:absolute;top:58px;right:12px;z-index:1000;padding:8px;display:none;flex-direction:column;gap:6px;min-width:180px;border-radius:16px}
 #menu button{padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#ddd;font-size:12px;text-align:left}
-#followBtn{position:absolute;bottom:130px;left:50%;transform:translateX(-50%);z-index:999;padding:13px 26px;font-size:11px;font-weight:800;border-radius:30px;letter-spacing:0.5px}
+#followBtn{position:absolute;bottom:130px;left:50%;transform:translateX(-50%);z-index:999;padding:13px 26px;font-size:11px;font-weight:800;border-radius:30px;letter-spacing:0.5px;display:none}
 #box{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:999;padding:14px 22px;text-align:center;font-family:system-ui;min-width:320px;border-radius:24px}
 #box a{color:#fff !important;text-decoration:none;display:block;margin-top:8px;font-size:12px;font-weight:800;opacity:0.9}
 #credito{margin-top:8px;font-size:9px;opacity:0.4;color:#fff}
@@ -63,30 +63,29 @@ map.on('dragstart',()=>{if(seguir){seguir=false;document.getElementById('followB
 map.on('click',()=>{if(menuAberto)toggleMenu();});
 function voltar(){seguir=true;primeiro=true;document.getElementById('followBtn').style.display='none';map.flyTo(m.getLatLng(),17,{duration:1.8});}
 function trocar(c){ATUAL=c;document.getElementById('btn1').className=c=='PALIO1'?'ativo':'';document.getElementById('btn2').className=c=='PALIO2'?'ativo':'';document.getElementById('nome').innerText=c;poly.setLatLngs([]);primeiro=true;seguir=true;document.getElementById('followBtn').style.display='none';up()}
-async function zerar(){if(!confirm(`Zerar histórico do ${ATUAL}?`)) return;let f=ATUAL=='PALIO1'?`device_id=in.(PALIO1)`:`device_id=eq.${ATUAL}`;await fetch(`${U}/rest/v1/rastreador_historico?${f}`,{method:'DELETE',headers:{apikey:K,Authorization:"Bearer "+K}});poly.setLatLngs([]);document.getElementById('qtd').innerText='0';}
+async function zerar(){if(!confirm(`Zerar histórico do ${ATUAL}?`)) return;let f=`device_id=eq.${ATUAL}`;await fetch(`${U}/rest/v1/rastreador_historico?${f}`,{method:'DELETE',headers:{apikey:K,Authorization:"Bearer "+K}});poly.setLatLngs([]);document.getElementById('qtd').innerText='0';}
 function tempoAtras(iso){ if(!iso) return '--'; let diff = (Date.now() - new Date(iso).getTime())/1000; if(diff < 60) return 'agora'; if(diff < 3600) return Math.floor(diff/60)+' min atrás'; if(diff < 86400) return Math.floor(diff/3600)+'h atrás'; return Math.floor(diff/86400)+'d atrás';}
 async function up(){
-  let ids=ATUAL=='PALIO1'?`device_id=in.(PALIO1,LG)`:`device_id=eq.${ATUAL}`;
+  let ids=`device_id=eq.${ATUAL}`;
   try{
     let r=await fetch(`${U}/rest/v1/rastreador?${ids}&order=updated_at.desc&limit=1`,{headers:{apikey:K,Authorization:"Bearer "+K},cache:'no-store'});
     let d=await r.json(); if(!d[0]) { document.getElementById('status').innerText='● OFFLINE'; document.getElementById('status').className='offline'; return;}
     m.setLatLng([d[0].lat,d[0].lng]);
     document.getElementById('gmap').href=`https://www.google.com/maps?q=${d[0].lat},${d[0].lng}`;
     let last = new Date(d[0].updated_at).getTime();
-    let agora = Date.now();
-    let diffMin = (agora - last)/1000/60;
+    let diffMin = (Date.now() - last)/1000/60;
     let statusEl = document.getElementById('status');
     let iconEl = document.getElementById('statusIcon');
     if(diffMin <= 2){ statusEl.innerText = '● ONLINE'; statusEl.className = 'online'; iconEl.innerText = '🟢'; } else { statusEl.innerText = '● OFFLINE'; statusEl.className = 'offline'; iconEl.innerText = '🔴'; }
     document.getElementById('tempo').innerText = tempoAtras(d[0].updated_at);
-    if(d[0].battery !== undefined && d[0].battery !== null){ let b = Math.round(d[0].battery); let emoji = b > 60 ? '🔋' : '🪫'; document.getElementById('bateria').innerText = `${emoji} ${b}%`; } else { document.getElementById('bateria').innerText = '🔋 --%'; }
+    if(d[0].battery != null){ let b = Math.round(d[0].battery); document.getElementById('bateria').innerText = `${b > 60 ? '🔋' : '🪫'} ${b}%`; } else { document.getElementById('bateria').innerText = '🔋 --%'; }
     let rh=await fetch(`${U}/rest/v1/rastreador_historico?${ids}&order=created_at.asc&limit=500`,{headers:{apikey:K,Authorization:"Bearer "+K},cache:'no-store'});
     let h=await rh.json(); 
     if(h.length){ poly.setLatLngs(h.map(x=>[x.lat,x.lng])); document.getElementById('qtd').innerText=h.length; if(verHist && !map.hasLayer(poly)) poly.addTo(map); if(primeiro){map.setView([d[0].lat,d[0].lng],17);primeiro=false;} else if(seguir){map.panTo([d[0].lat,d[0].lng]);} }
   }catch(e){}
 }
 setTimeout(()=>map.invalidateSize(),500);up();setInterval(up,10000);
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=11');}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=12');}
 </script>
 </body>
 </html>
