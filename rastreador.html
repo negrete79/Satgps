@@ -31,6 +31,7 @@ function clock(){document.getElementById('h').innerText=new Date().toLocaleTimeS
 setInterval(clock,1000);clock();
 async function clima(lat,lon){try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);const j=await r.json();document.getElementById('clima').innerText=Math.round(j.current_weather.temperature)+"°C";}catch(e){}}
 let ultimo=0;
+let lastLat=null, lastLon=null;
 let audio = document.getElementById('radio');
 const RADIO_URL = "https://srv3.soundstream.com.br/listen/sertanejapop/radio.mp3";
 audio.src = RADIO_URL;
@@ -40,16 +41,28 @@ document.body.onclick=async()=>{
   try{document.documentElement.requestFullscreen?.();}catch(e){}
   try{await navigator.wakeLock.request('screen');}catch(e){}
   try{ await audio.play(); if('mediaSession' in navigator){ navigator.mediaSession.metadata = new MediaMetadata({title: 'Sertaneja Pop - '+DEVICE_ID,artist: 'SatGPS Ao Vivo',album: 'Não feche este app'}); } }catch(e){}
-  const enviar=async(lat,lon)=>{
-    if(Date.now()-ultimo<30000)return;ultimo=Date.now();clima(lat,lon);
-    document.getElementById('temp').innerText=`${DEVICE_ID} ${BAT}% | ${new Date().toLocaleTimeString('pt-BR')} | RÁDIO ON`;
-    await fetch(`${U}/rest/v1/rastreador`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify({device_id:DEVICE_ID,lat:lat,lng:lon,battery:BAT,updated_at:new Date().toISOString()})});
-    await fetch(`${U}/rest/v1/rastreador_historico`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},body:JSON.stringify({device_id:DEVICE_ID,lat:lat,lng:lon,battery:BAT})}).catch(()=>{});
+  const enviar=async(lat,lon,forcar=false)=>{
+    if(!forcar && Date.now()-ultimo<25000) return;
+    ultimo=Date.now(); 
+    lastLat=lat; lastLon=lon;
+    clima(lat,lon);
+    document.getElementById('temp').innerText=`${DEVICE_ID} ${BAT}% | ${new Date().toLocaleTimeString('pt-BR')} | ENVIANDO...`;
+    try{
+      let r=await fetch(`${U}/rest/v1/rastreador`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify({device_id:DEVICE_ID,lat:lat,lng:lon,battery:BAT,updated_at:new Date().toISOString()})});
+      if(!r.ok){document.getElementById('temp').innerText=`ERRO SERVIDOR ${r.status} - LIBERE RLS`;}
+      else{document.getElementById('temp').innerText=`${DEVICE_ID} ${BAT}% | ${new Date().toLocaleTimeString('pt-BR')} | RÁDIO ON | OK`;}
+      await fetch(`${U}/rest/v1/rastreador_historico`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},body:JSON.stringify({device_id:DEVICE_ID,lat:lat,lng:lon,battery:BAT})}).catch(()=>{});
+    }catch(e){document.getElementById('temp').innerText=`ERRO REDE: ${e.message}`;}
   };
-  const pega = () => navigator.geolocation.getCurrentPosition(p=>enviar(p.coords.latitude,p.coords.longitude),null,{enableHighAccuracy:true});
+  const pega = () => {
+    if(lastLat){
+      enviar(lastLat, lastLon, true);
+    }
+    navigator.geolocation.getCurrentPosition(p=>enviar(p.coords.latitude,p.coords.longitude),()=>{if(lastLat) enviar(lastLat,lastLon,true)}, {enableHighAccuracy:true});
+  };
   pega();
   navigator.geolocation.watchPosition(p=>enviar(p.coords.latitude,p.coords.longitude),null,{enableHighAccuracy:true,maximumAge:0});
-  setInterval(pega, 30000);
+  setInterval(pega, 25000);
   audio.addEventListener('error', ()=>{setTimeout(()=>{audio.src=RADIO_URL; audio.play().catch(()=>{});}, 3000);});
   audio.addEventListener('ended', ()=>{audio.src=RADIO_URL; audio.play().catch(()=>{});});
 };
