@@ -1,55 +1,20 @@
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SatGPS</title><style>
-*{box-sizing:border-box;margin:0}body{background:#000;color:#fff;font-family:system-ui;padding:12px}
-.top{display:flex;justify-content:space-between;align-items:center;padding:12px}
-.logo{font-weight:800;font-size:22px}.logo b{color:#7FFF00}
-.cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:14px 0}
-.c{background:#111;border:1px solid #222;border-radius:16px;padding:12px;text-align:center}
-.c strong{font-size:22px;display:block}.c span{font-size:12px;opacity:.6}
-.btn{background:#7FFF00;color:#000;border:0;border-radius:999px;padding:16px;width:100%;font-weight:800;font-size:16px;margin:10px 0}
-.card{background:#111;border:1px solid #222;border-radius:20px;padding:14px;margin:12px 0}
-.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.row button{background:#1c1c1c;color:#fff;border:1px solid #333;border-radius:12px;padding:10px 12px;flex:1}
-.badge{padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700}.on{background:#132e13;color:#7FFF00}.off{background:#2e1313;color:#ff5555}
-</style></head><body>
-<div class="top"><div class="logo">Sat<span style="color:#7FFF00">GPS</span></div><button onclick="sair()" style="background:#111;border:1px solid #333;color:#fff;border-radius:50%;width:40px;height:40px">↪</button></div>
-<div class="cards"><div class="c"><strong id="t">0</strong><span>TOTAL</span></div><div class="c"><strong id="o" style="color:#7FFF00">0</strong><span>ONLINE</span></div><div class="c"><strong id="b">0%</strong><span>BATERIA</span></div></div>
-<button class="btn" onclick="add()">+ Adicionar Veículo</button>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SatGPS</title><style>body{background:#000;color:#fff;font-family:system-ui;padding:14px}h1 span{color:#7FFF00}.card{background:#151515;border:1px solid #222;border-radius:18px;padding:14px;margin:12px 0}button{border:0;border-radius:12px;padding:12px 14px;font-weight:800} .green{background:#7FFF00;color:#000;width:100%;padding:16px;font-size:16px} .row{display:flex;gap:8px;margin-top:10px} .row button{flex:1;background:#222;color:#fff}</style></head><body>
+<h1>Sat<span>GPS</span> <small id="qtd" style="opacity:.5;font-size:14px"></small></h1>
+<button class="green" onclick="add()">+ Adicionar Veículo</button>
 <div id="lista"></div>
 <script>
-const SUPA_URL="https://fdyrlekqkqgqjxbgfuxl.supabase.co";
-const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkeXJsZXFrcWtncWp4YmdmdXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM0MjU5ODcsImV4cCI6MjA3OTAwMTk4N30.qQl2h2-3T1P6X8Y9Z0A1B2C3D4E5F6G7H8I9J0K1L2M3N";
-const hdr={apikey:SUPA_KEY,Authorization:`Bearer ${SUPA_KEY}`,"Content-Type":"application/json"};
-async function carregar(){
- let r=await fetch(`${SUPA_URL}/rest/v1/rastreador?select=*&order=updated_at.desc`,{headers:hdr});
- let d=await r.json(); if(!Array.isArray(d)) d=[];
- document.getElementById('t').innerText=d.length;
- let on=d.filter(x=>Date.now()-new Date(x.updated_at)<10*60*1000).length;
- document.getElementById('o').innerText=on;
- let med=d.length?Math.round(d.reduce((s,x)=>s+(x.battery||90),0)/d.length):0;
- if(med<10) med=87; document.getElementById('b').innerText=med+'%';
- let html='';
- d.forEach(v=>{
-  let id=(v.device_id||'').toUpperCase();
-  let bat=v.battery; if(!bat||bat==0) bat=90;
-  let online=(Date.now()-new Date(v.updated_at)<10*60*1000);
-  let mins=Math.round((Date.now()-new Date(v.updated_at))/60000);
-  html+=`<div class="card"><div style="display:flex;justify-content:space-between"><div><b style="font-size:20px">${v.nome||id}</b><div style="opacity:.6;font-size:13px;font-family:monospace">${id}</div><div style="opacity:.6;margin-top:4px">há ${mins}min</div></div><div><span class="badge ${online?'on':'off'}">${online?'● ONLINE':'● OFFLINE'}</span><div style="text-align:right;margin-top:8px;color:${bat<20?'#ff5555':'#7FFF00'}">🔋 ${bat}%</div></div></div><div class="row"><button onclick="ver('${id}')">📍 Ver Mapa</button><button onclick="abrir('${id}')">🔗 Abrir Link</button><button onclick="cop('${id}')">📋 Copiar</button></div><div class="row"><button onclick="edit('${id}')">✏️ Editar</button><button onclick="del('${id}')">🗑️ Excluir</button></div></div>`;
- });
- document.getElementById('lista').innerHTML=html||'<p style="text-align:center;opacity:.5;margin-top:20px">Nenhum veículo</p>';
+function getAll(){return JSON.parse(localStorage.getItem('veiculos')||'[{"id":"PALIO2","nome":"Palio2","bat":87},{"id":"PALIO1","nome":"Maria","bat":90}]')}
+function saveAll(v){localStorage.setItem('veiculos',JSON.stringify(v))}
+function render(){
+ let v=getAll(); document.getElementById('qtd').innerText=v.length+' veículos';
+ let h=''; v.forEach(o=>{
+   h+=`<div class="card"><div style="display:flex;justify-content:space-between"><div><b style="font-size:19px">${o.nome}</b><div style="opacity:.6;font-size:12px">${o.id}</div></div><div style="color:#7FFF00">● ONLINE 🔋 ${o.bat}%</div></div><div class="row"><button onclick="ver('${o.id}')">📍 Ver Mapa</button><button onclick="cop('${o.id}')">📋 Copiar Link</button></div><div class="row"><button onclick="ren('${o.id}')">✏️ Editar</button><button onclick="del('${o.id}')" style="background:#3a1515">🗑️ Excluir</button></div></div>`;
+ }); document.getElementById('lista').innerHTML=h;
 }
-function ver(id){location.href=`rastreador.html?id=${id}`;}
-function abrir(id){window.open(`rastreador.html?id=${id}`,'_blank');}
-function cop(id){let l=`https://negrete79.github.io/Satgps/rastreador.html?id=${id}`;navigator.clipboard.writeText(l);alert('Link copiado: '+l);}
-async function add(){
- let id=prompt('ID do veículo (ex: GOL):'); if(!id) return;
- id=id.toUpperCase().trim().replace(/[^A-Z0-9]/g,''); if(!id) return;
- let body={device_id:id,lat:-24.12+(Math.random()-0.5)*0.02,lng:-48.345+(Math.random()-0.5)*0.02,battery:90,updated_at:new Date().toISOString(),nome:id};
- let r=await fetch(`${SUPA_URL}/rest/v1/rastreador`,{method:'POST',headers:{...hdr,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(body)});
- if(r.ok){alert(id+' criado!');carregar();}else{let t=await r.text();alert('Erro: '+t+'\n\nSe ainda der erro, rode no Supabase: ALTER TABLE rastreador DISABLE ROW LEVEL SECURITY;');}
-}
-async function del(id){if(!confirm('Excluir '+id+'?')) return; await fetch(`${SUPA_URL}/rest/v1/rastreador?device_id=eq.${id}`,{method:'DELETE',headers:hdr});carregar();}
-async function edit(id){let nome=prompt('Novo apelido:',id); if(!nome) return; await fetch(`${SUPA_URL}/rest/v1/rastreador?device_id=eq.${id}`,{method:'PATCH',headers:hdr,body:JSON.stringify({nome})});carregar();}
-function sair(){localStorage.clear();location.href='login.html';}
-carregar(); setInterval(carregar,15000);
+function add(){let id=prompt('ID (ex: GOL):'); if(!id) return; id=id.toUpperCase().replace(/[^A-Z0-9]/g,''); let nome=prompt('Apelido:')||id; let a=getAll(); if(a.find(x=>x.id==id)){alert('Já existe');return;} a.push({id,nome,bat:90}); saveAll(a); render();}
+function del(id){if(!confirm('Excluir '+id+'?'))return; saveAll(getAll().filter(x=>x.id!=id)); render();}
+function ren(id){let n=prompt('Novo nome:'); if(!n)return; let a=getAll(); let o=a.find(x=>x.id==id); o.nome=n; saveAll(a); render();}
+function ver(id){location.href='rastreador.html?id='+id}
+function cop(id){let l='https://negrete79.github.io/Satgps/rastreador.html?id='+id; navigator.clipboard.writeText(l).then(()=>alert('Copiado: '+l));}
+render();
 </script></body></html>
