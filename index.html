@@ -1,118 +1,92 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SatGPS - Frota</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Carro GPS</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="manifest" href="manifest.json?v=8">
+<meta name="theme-color" content="#000000">
 <style>
-:root{--lime:#b6ff00;--bg:#0a0a0a;--card:#171717;--border:#2a2a2a}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:#fff;font-family:Inter,system-ui,sans-serif;padding:16px}
-.header{display:flex;justify-content:space-between;align-items:center;padding:12px 0 20px}
-.logo{font-weight:800;font-size:24px;display:flex;gap:8px;align-items:center}
-.logo span{color:var(--lime)}
-.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
-.stat{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:16px;text-align:center}
-.stat b{font-size:28px;display:block}
-.stat span{font-size:12px;letter-spacing:1px;color:#888}
-.btn-lime{background:var(--lime);color:#000;border:0;width:100%;padding:18px;border-radius:20px;font-weight:800;font-size:16px;display:flex;gap:10px;justify-content:center;align-items:center}
-.card{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:20px;margin-top:16px}
-.top{display:flex;justify-content:space-between;align-items:flex-start}
-.name{font-size:22px;font-weight:800}
-.sub{color:#888;font-family:monospace;font-size:14px;margin-top:2px}
-.badge{font-size:12px;padding:6px 12px;border-radius:20px;font-weight:700}
-.offline{background:#3a1a1a;color:#ff4d4d}
-.online{background:#1a3a1a;color:var(--lime)}
-.info{margin:14px 0;display:flex;justify-content:space-between;color:#aaa;font-size:14px}
-.actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.actions2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-.btn{border:1px solid var(--border);background:#222;border-radius:16px;padding:14px 6px;color:#fff;font-weight:600;font-size:13px;display:flex;flex-direction:column;gap:6px;align-items:center}
-#mapModal{position:fixed;inset:0;background:#000;z-index:999;display:none;flex-direction:column}
-#map{flex:1}
-#mapHeader{padding:16px;display:flex;justify-content:space-between;align-items:center;background:#111}
+html,body{margin:0;height:100%;background:#000}
+#map{height:100vh;width:100vw}
+.glass{background: rgba(20,20,20,0.45) !important; backdrop-filter: blur(12px) saturate(1.5); -webkit-backdrop-filter: blur(12px) saturate(1.5); border: 1px solid rgba(255,255,255,0.15) !important; box-shadow: 0 4px 20px rgba(0,0,0,0.4); color:#fff !important;}
+#selector{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:999;padding:5px;display:flex;gap:6px;border-radius:22px}
+#selector button{padding:9px 15px;border-radius:15px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);font-weight:700;font-size:11px;backdrop-filter:blur(8px)}
+#selector button.ativo{background:rgba(0,0,0,0.7);color:#fff;border-color:rgba(255,255,255,0.2)}
+#menuBtn{position:absolute;top:12px;right:12px;z-index:1000;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px}
+#menu{position:absolute;top:58px;right:12px;z-index:1000;padding:8px;display:none;flex-direction:column;gap:6px;min-width:180px;border-radius:16px}
+#menu button{padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#ddd;font-size:12px;text-align:left}
+#followBtn{position:absolute;bottom:130px;left:50%;transform:translateX(-50%);z-index:999;padding:13px 26px;font-size:11px;font-weight:800;border-radius:30px;letter-spacing:0.5px}
+#box{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:999;padding:14px 22px;text-align:center;font-family:system-ui;min-width:320px;border-radius:24px}
+#box a{color:#fff !important;text-decoration:none;display:block;margin-top:8px;font-size:12px;font-weight:800;opacity:0.9}
+#credito{margin-top:8px;font-size:9px;opacity:0.4;color:#fff}
+#line2{margin-top:6px;font-size:11px;display:flex;gap:10px;justify-content:center;align-items:center;opacity:0.9}
+#status.online{color:#4ade80} #status.offline{color:#ff5555}
 </style>
 </head>
 <body>
-<div class="header">
-  <div class="logo">🛰️ Sat<span>GPS</span></div>
-  <button onclick="location.reload()" style="background:#222;border:1px solid #333;border-radius:50%;width:44px;height:44px;color:#fff">↗</button>
+<div id="map"></div>
+<div id="selector" class="glass">
+<button id="btn1" class="ativo" onclick="trocar('Palio1')">PALIO 1</button>
+<button id="btn2" onclick="trocar('Palio2')">PALIO 2</button>
 </div>
-
-<div class="stats">
-  <div class="stat"><b id="total">0</b><span>TOTAL</span></div>
-  <div class="stat"><b id="on" style="color:var(--lime)">0</b><span>ONLINE</span></div>
-  <div class="stat"><b id="bat">0%</b><span>BATERIA</span></div>
+<div id="menuBtn" class="glass" onclick="toggleMenu()">⋮</div>
+<div id="menu" class="glass">
+<button id="mHist" onclick="toggleHist();toggleMenu()">🚫 HISTÓRICO: OFF</button>
+<button onclick="zerar();toggleMenu()" style="color:#ff7777">🗑️ ZERAR HISTÓRICO</button>
 </div>
-
-<button class="btn-lime" onclick="addVeiculo()">+ Adicionar Veículo</button>
-
-<div id="lista"></div>
-
-<div id="mapModal">
-  <div id="mapHeader">
-    <b id="mapTitle">Mapa</b>
-    <button onclick="fecharMapa()" style="background:var(--lime);border:0;padding:10px 18px;border-radius:12px;font-weight:800">Fechar</button>
-  </div>
-  <div id="map"></div>
+<button id="followBtn" class="glass" onclick="voltar()">📍 VOLTAR AO CARRO</button>
+<div id="box" class="glass">
+<div><span id="statusIcon">⚫</span> <span id="nome">PALIO 1</span> - <span id="qtd">0</span> pts</div>
+<div id="line2">
+<span id="status" class="offline">● OFFLINE</span>
+<span id="bateria">🔋 --%</span>
+<span id="tempo">--</span>
 </div>
-
+<a id="gmap" href="#" target="_blank">IR PARA O GOOGLE MAPS</a>
+<div id="credito">Crédito criado por Elias Costa NEGRET'S</div>
+</div>
 <script>
 const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
-let map, marker;
-
-async function carregar(){
-  const r=await fetch(`${U}/rest/v1/rastreador?select=*`,{headers:{apikey:K,Authorization:"Bearer "+K}});
-  const dados=await r.json();
-  document.getElementById('total').innerText=dados.length;
-  let online=0, batMax=0;
-  let html="";
-  dados.forEach(v=>{
-    const diffMin = (Date.now()-new Date(v.updated_at).getTime())/60000;
-    const isOn = diffMin < 5;
-    if(isOn) online++;
-    batMax=Math.max(batMax, v.battery||0);
-    html+=`
-    <div class="card">
-      <div class="top">
-        <div><div class="name">${v.device_id}</div><div class="sub">${v.device_id}</div></div>
-        <div class="badge ${isOn?'online':'offline'}">● ${isOn?'ONLINE':'OFFLINE'}</div>
-      </div>
-      <div class="info"><span>há ${Math.round(diffMin)}min</span><span style="color:var(--lime);font-weight:700">🔋 ${v.battery||0}%</span></div>
-      <div class="actions">
-        <button class="btn" onclick="verMapa(${v.lat},${v.lng},'${v.device_id}')">📍<span>Ver Mapa</span></button>
-        <button class="btn" onclick="abrirLink('${v.device_id}')">🔗<span>Abrir Link</span></button>
-        <button class="btn" onclick="copiar('${v.device_id}')">📄<span>Copiar</span></button>
-      </div>
-      <div class="actions2">
-        <button class="btn" onclick="editar('${v.device_id}')">🖊️<span>Editar</span></button>
-        <button class="btn" onclick="excluir('${v.device_id}')">🗑️<span>Excluir</span></button>
-      </div>
-    </div>`;
-  });
-  document.getElementById('on').innerText=online;
-  document.getElementById('bat').innerText=batMax+"%";
-  document.getElementById('lista').innerHTML=html||"<p style='text-align:center;color:#555;margin-top:40px'>Nenhum veículo</p>";
+let ATUAL="Palio1", seguir=true, primeiro=true, verHist=false, menuAberto=false;
+const sat = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:20});
+const rua = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{maxZoom:20});
+const map = L.map('map',{layers:[sat], zoomControl:false}).setView([-20.3881,-43.7569],17);
+L.control.layers({"🛰️ SATÉLITE": sat, "🗺️ RUA": rua},{},{position:'topleft'}).addTo(map);
+let m=L.marker([-20.3881,-43.7569]).addTo(map);
+let poly=L.polyline([],{color:'#ff0000',weight:3,opacity:0.7});
+function toggleMenu(){menuAberto=!menuAberto;document.getElementById('menu').style.display=menuAberto?'flex':'none';}
+function toggleHist(){verHist=!verHist;if(verHist){poly.addTo(map);document.getElementById('mHist').innerText='👁️ HISTÓRICO: ON';}else{map.removeLayer(poly);document.getElementById('mHist').innerText='🚫 HISTÓRICO: OFF';}}
+map.on('dragstart',()=>{if(seguir){seguir=false;document.getElementById('followBtn').style.display='block';}});
+map.on('click',()=>{if(menuAberto)toggleMenu();});
+function voltar(){seguir=true;primeiro=true;document.getElementById('followBtn').style.display='none';map.flyTo(m.getLatLng(),17,{duration:1.8});}
+function trocar(c){ATUAL=c;document.getElementById('btn1').className=c=='Palio1'?'ativo':'';document.getElementById('btn2').className=c=='Palio2'?'ativo':'';document.getElementById('nome').innerText=c.toUpperCase();poly.setLatLngs([]);primeiro=true;seguir=true;document.getElementById('followBtn').style.display='none';up()}
+async function zerar(){if(!confirm(`Zerar histórico do ${ATUAL}?`)) return;let f=ATUAL=='Palio1'?`device_id=in.(Palio1,LG)`:`device_id=eq.${ATUAL}`;await fetch(`${U}/rest/v1/rastreador_historico?${f}`,{method:'DELETE',headers:{apikey:K,Authorization:"Bearer "+K}});poly.setLatLngs([]);document.getElementById('qtd').innerText='0';}
+function tempoAtras(iso){ if(!iso) return '--'; let diff = (Date.now() - new Date(iso).getTime())/1000; if(diff < 60) return 'agora'; if(diff < 3600) return Math.floor(diff/60)+' min atrás'; if(diff < 86400) return Math.floor(diff/3600)+'h atrás'; return Math.floor(diff/86400)+'d atrás';}
+async function up(){
+  let ids=ATUAL=='Palio1'?`device_id=in.(Palio1,LG)`:`device_id=eq.${ATUAL}`;
+  try{
+    let r=await fetch(`${U}/rest/v1/rastreador?${ids}&order=updated_at.desc&limit=1`,{headers:{apikey:K,Authorization:"Bearer "+K},cache:'no-store'});
+    let d=await r.json(); if(!d[0]) { document.getElementById('status').innerText='● OFFLINE'; document.getElementById('status').className='offline'; return;}
+    m.setLatLng([d[0].lat,d[0].lng]);
+    document.getElementById('gmap').href=`https://www.google.com/maps?q=${d[0].lat},${d[0].lng}`;
+    let last = new Date(d[0].updated_at).getTime();
+    let agora = Date.now();
+    let diffMin = (agora - last)/1000/60;
+    let statusEl = document.getElementById('status');
+    let iconEl = document.getElementById('statusIcon');
+    if(diffMin <= 2){ statusEl.innerText = '● ONLINE'; statusEl.className = 'online'; iconEl.innerText = '🟢'; } else { statusEl.innerText = '● OFFLINE'; statusEl.className = 'offline'; iconEl.innerText = '🔴'; }
+    document.getElementById('tempo').innerText = tempoAtras(d[0].updated_at);
+    if(d[0].battery !== undefined && d[0].battery !== null){ let b = Math.round(d[0].battery); let emoji = b > 60 ? '🔋' : '🪫'; document.getElementById('bateria').innerText = `${emoji} ${b}%`; } else { document.getElementById('bateria').innerText = '🔋 --%'; }
+    let rh=await fetch(`${U}/rest/v1/rastreador_historico?${ids}&order=created_at.asc&limit=500`,{headers:{apikey:K,Authorization:"Bearer "+K},cache:'no-store'});
+    let h=await rh.json(); 
+    if(h.length){ poly.setLatLngs(h.map(x=>[x.lat,x.lng])); document.getElementById('qtd').innerText=h.length; if(verHist && !map.hasLayer(poly)) poly.addTo(map); if(primeiro){map.setView([d[0].lat,d[0].lng],17);primeiro=false;} else if(seguir){map.panTo([d[0].lat,d[0].lng]);} }
+  }catch(e){}
 }
-function verMapa(lat,lng,id){
-  document.getElementById('mapModal').style.display='flex';
-  document.getElementById('mapTitle').innerText=id;
-  setTimeout(()=>{
-    if(!map){map=L.map('map').setView([lat,lng],16);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);}
-    else{map.setView([lat,lng],16);}
-    if(marker) map.removeLayer(marker);
-    marker=L.marker([lat,lng]).addTo(map).bindPopup(id).openPopup();
-  },100);
-}
-function fecharMapa(){document.getElementById('mapModal').style.display='none';}
-function abrirLink(id){window.open(`https://negrete79.github.io/Satgps/rastreador.html?id=${id}`,'_blank');}
-function copiar(id){navigator.clipboard.writeText(`https://negrete79.github.io/Satgps/rastreador.html?id=${id}`);alert('Link copiado: '+id);}
-function addVeiculo(){let id=prompt('Nome do veículo (ex: PALIO2):');if(id){abrirLink(id.toUpperCase());}}
-function editar(id){alert('Editar: '+id+' - por enquanto muda o nome no link ?id=');}
-async function excluir(id){if(confirm('Excluir '+id+'?')){await fetch(`${U}/rest/v1/rastreador?device_id=eq.${id}`,{method:'DELETE',headers:{apikey:K,Authorization:"Bearer "+K}});carregar();}}
-
-carregar();setInterval(carregar,15000);
+setTimeout(()=>map.invalidateSize(),500);up();setInterval(up,10000);
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=8');}
 </script>
 </body>
 </html>
