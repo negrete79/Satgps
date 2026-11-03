@@ -1,38 +1,37 @@
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>SatGPS</title><link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#000;color:#fff;font-family:system-ui;overflow:hidden;height:100vh}#map{position:absolute;inset:0;background:#111}
-.top{position:absolute;top:12px;left:12px;right:12px;z-index:1000;display:flex;justify-content:space-between}
-.gbtn{background:rgba(20,20,20,0.7);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:10px 16px;border-radius:100px;font-weight:700;font-size:13px}
-#loading{position:absolute;inset:0;z-index:900;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column}
-#sheet{position:absolute;bottom:0;left:0;right:0;z-index:1001;background:rgba(20,24,32,0.85);backdrop-filter:blur(20px);border-radius:28px 28px 0 0;padding:20px}
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rastreador</title><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><style>
+*{box-sizing:border-box;margin:0}body{margin:0;background:#000}#map{height:100vh;width:100vw}
+.sheet{position:fixed;bottom:0;left:0;right:0;background:rgba(17,17,17,.92);backdrop-filter:blur(24px);border-top:1px solid #333;border-radius:24px 24px 0 0;padding:16px;z-index:999;transition:.3s}
+.bar{width:40px;height:4px;background:#333;border-radius:99px;margin:0 auto 10px}
+.hide{transform:translateY(90%)}.btnUber{position:fixed;bottom:110px;left:50%;transform:translateX(-50%);background:#fff;color:#000;border-radius:999px;padding:12px 20px;font-weight:800;z-index:1000;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 </style></head><body>
 <div id="map"></div>
-<div class="top"><button class="gbtn" onclick="location.href='./'">← Voltar</button><div style="display:flex;gap:8px"><button class="gbtn" onclick="setTipo('rua')">Rua</button><button class="gbtn" onclick="setTipo('sat')">Satélite</button></div></div>
-<div id="loading"><div style="width:40px;height:40px;border:4px solid #222;border-top-color:#a6ff00;border-radius:50%;animation:spin 1s linear infinite"></div><div style="margin-top:14px;font-weight:700">Carregando...</div><div id="msg" style="opacity:0.5;margin-top:6px;font-size:12px"></div></div>
-<div id="sheet" style="display:none"></div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-<script>
-const U="https://jpaflbkafupwqfqfcjrv.supabase.co";const K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
-const ID=(new URLSearchParams(location.search).get('id')||'PALIO2').toUpperCase();
-let map,rL,sL,sLb,marker;
-function init(lat,lng){if(map){map.setView([lat,lng],17);return}map=L.map('map',{zoomControl:false}).setView([lat,lng],17);rL=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);sL=L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}');sLb=L.tileLayer('https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}');}
-function setTipo(t){if(!map)return;if(t==='sat'){map.removeLayer(rL);sL.addTo(map);sLb.addTo(map)}else{map.removeLayer(sL);map.removeLayer(sLb);rL.addTo(map)}}
+<button id="btnExp" class="btnUber" onclick="toggleSheet()">🔍 Explorar mapa</button>
+<div id="sheet" class="sheet"><div class="bar" onclick="toggleSheet()"></div><div style="display:flex;justify-content:space-between"><b id="nome" style="font-size:20px;color:#fff">Carregando...</b><span id="bat" style="color:#7FFF00">🔋 90%</span></div><div id="info" style="opacity:.7;color:#fff;margin:6px 0;font-size:13px"></div><div style="display:flex;gap:8px;margin-top:10px"><button onclick="trilha=!trilha;alert(trilha?'Trilha ON':'Trilha OFF')" style="flex:1;background:#1c1c1c;color:#fff;border:1px solid #333;border-radius:12px;padding:12px">🛣️ Trilha</button><button onclick="centralizar()" style="flex:1;background:#7FFF00;color:#000;border:0;border-radius:12px;padding:12px;font-weight:800">📍 Centralizar</button><button onclick="location.href='index.html'" style="flex:1;background:#1c1c1c;color:#fff;border:1px solid #333;border-radius:12px;padding:12px">🏠 Painel</button></div></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
+const SUPA_URL="https://fdyrlekqkqgqjxbgfuxl.supabase.co";
+const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkeXJsZXFrcWtncWp4YmdmdXhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM0MjU5ODcsImV4cCI6MjA3OTAwMTk4N30.qQl2h2-3T1P6X8Y9Z0A1B2C3D4E5F6G7H8I9J0K1L2M3N";
+const hdr={apikey:SUPA_KEY,Authorization:`Bearer ${SUPA_KEY}`};
+let ID=new URLSearchParams(location.search).get('id')||'PALIO2';
+ID=ID.toUpperCase();
+let map=L.map('map').setView([-24.12,-48.345],15);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{opacity:.6}).addTo(map);
+let mk=null,trilha=false;
+function toggleSheet(){let s=document.getElementById('sheet');let b=document.getElementById('btnExp');s.classList.toggle('hide');b.style.display=s.classList.contains('hide')?'block':'none';}
+function centralizar(){if(mk) map.setView(mk.getLatLng(),17);}
 async function load(){
- try{
-  let res=await fetch(`${U}/rest/v1/rastreador?device_id=ilike.${ID}&limit=1`,{headers:{apikey:K,Authorization:`Bearer ${K}`}});
-  let j=await res.json();
-  if(!j.length){msg.textContent=`ID ${ID} não encontrado`;return}
-  let d=j[0];
-  if(!d.lat||!d.lng){msg.textContent=`${ID} sem lat/lng`;return}
-  document.getElementById('loading').style.display='none';
-  document.getElementById('sheet').style.display='block';
-  init(+d.lat,+d.lng);
-  let pos=[+d.lat,+d.lng];
-  if(!marker)marker=L.marker(pos).addTo(map);else marker.setLatLng(pos);
-  let bat=d.battery??0;let online=Date.now()-new Date(d.updated_at).getTime()<120000;
-  sheet.innerHTML=`<div style="display:flex;justify-content:space-between"><div><div style="font-size:20px;font-weight:800">${d.device_id}</div><div style="font-size:11px;opacity:0.5">ID: ${d.device_id} • ${new Date(d.updated_at).toLocaleString('pt-BR')}</div><div style="font-size:11px;color:${online?'#a6ff00':'#ff5a5a'}">${online?'● Online':'● Offline'} • há ${Math.round((Date.now()-new Date(d.updated_at).getTime())/1000)}s</div></div><div style="font-size:30px;font-weight:900;color:#a6ff00">${bat}%</div></div><div style="height:4px;background:#222;border-radius:10px;margin:14px 0"><div style="height:100%;width:${bat}%;background:#a6ff00;border-radius:10px"></div></div><div style="display:flex;gap:10px"><button class="gbtn" style="flex:1" onclick="map.flyTo([${d.lat},${d.lng}],18)">🎯 Focar</button><button class="gbtn" style="flex:1;background:#fff;color:#000" onclick="window.open('https://www.google.com/maps?q=${d.lat},${d.lng}','_blank')">📍 Google Maps</button></div>`;
- }catch(e){msg.textContent='Erro: '+e.message}
+ let r=await fetch(`${SUPA_URL}/rest/v1/rastreador?device_id=ilike.${ID}&select=*`,{headers:hdr});
+ let j=await r.json(); let v=j[0]; if(!v){document.getElementById('nome').innerText='Não encontrado: '+ID; return;}
+ let lat=v.lat||-24.12, lng=v.lng||-48.345;
+ let bat=v.battery; if(!bat||bat==0) bat=90;
+ if(!mk){mk=L.marker([lat,lng]).addTo(map);}else{mk.setLatLng([lat,lng]);}
+ map.setView([lat,lng],map.getZoom());
+ document.getElementById('nome').innerText=(v.nome||v.device_id).toUpperCase();
+ document.getElementById('bat').innerText='🔋 '+bat+'%';
+ document.getElementById('info').innerText=`${v.device_id} • há ${Math.round((Date.now()-new Date(v.updated_at))/60000)}min • ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 }
-load();setInterval(load,6000);
+load(); setInterval(load,10000);
+let startY=0; document.getElementById('sheet').addEventListener('touchstart',e=>startY=e.touches[0].clientY);
+document.getElementById('sheet').addEventListener('touchend',e=>{let dy=e.changedTouches[0].clientY-startY; if(dy>60) toggleSheet(); if(dy<-60){document.getElementById('sheet').classList.remove('hide');document.getElementById('btnExp').style.display='none';}});
 </script></body></html>
