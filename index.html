@@ -11,48 +11,44 @@
 <style>
 html,body{margin:0;height:100%;background:#000}
 #map{height:100vh;width:100vw}
-.glass{background: rgba(20,20,20,0.45) !important;backdrop-filter: blur(12px) saturate(1.5);border: 1px solid rgba(255,255,255,0.15) !important;box-shadow: 0 4px 20px rgba(0,0,0,0.4);color:#fff !important;}
+.glass{background: rgba(20,20,20,0.45) !important;backdrop-filter: blur(12px) saturate(1.5);border: 1px solid rgba(255,255,255,0.15) !important;color:#fff !important;}
 #selector{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:999;padding:5px;display:flex;gap:6px;border-radius:22px}
-#selector button{padding:9px 15px;border-radius:15px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);font-weight:700;font-size:11px;backdrop-filter:blur(8px);display:flex;align-items:center;gap:8px}
-#selector button.ativo{background:rgba(0,0,0,0.7);color:#fff;border-color:rgba(255,255,255,0.2)}
-#selector .dot{width:9px;height:9px;border-radius:50%;background:#555;flex-shrink:0;transition:all 0.3s}
+#selector button{padding:9px 15px;border-radius:15px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);font-weight:700;font-size:11px;display:flex;align-items:center;gap:8px}
+#selector button.ativo{background:rgba(0,0,0,0.7);color:#fff}
+#selector .dot{width:9px;height:9px;border-radius:50%;background:#555}
 #selector .dot.online{background:#22c55e;box-shadow:0 0 8px #22c55e}
-#selector .dot.semconexao{background:#f59e0b;box-shadow:0 0 8px #f59e0b;animation:dotPulse 1.5s ease-in-out infinite}
-#selector .dot.offline{background:#ef4444;box-shadow:0 0 6px #ef4444}
-@keyframes dotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(1.3)}}
+#selector .dot.semconexao{background:#f59e0b;box-shadow:0 0 8px #f59e0b;animation:dotPulse 1.5s infinite}
+#selector .dot.offline{background:#ef4444}
+@keyframes dotPulse{0%,100%{opacity:1}50%{opacity:0.5}}
 #menuBtn{position:absolute;top:12px;right:12px;z-index:1000;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer}
 #menu{position:absolute;top:58px;right:12px;z-index:1000;padding:8px;display:none;flex-direction:column;gap:6px;min-width:180px;border-radius:16px}
-#menu button{padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#ddd;font-size:12px;text-align:left;cursor:pointer}
-#followBtn{position:absolute;bottom:140px;left:50%;transform:translateX(-50%);z-index:999;padding:13px 26px;font-size:11px;font-weight:800;border-radius:30px;letter-spacing:0.5px;cursor:pointer;display:none}
-#followBtn.online{background:rgba(34,197,94,0.25) !important;color:#4ade80 !important;border-color:rgba(34,197,94,0.4) !important}
-#followBtn.semconexao{background:rgba(245,158,11,0.25) !important;color:#fbbf24 !important;border-color:rgba(245,158,11,0.4) !important}
-#followBtn.offline{background:rgba(239,68,68,0.25) !important;color:#f87171 !important;border-color:rgba(239,68,68,0.4) !important}
+#menu button{padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#ddd;font-size:12px;text-align:left}
+#followBtn{position:absolute;bottom:140px;left:50%;transform:translateX(-50%);z-index:999;padding:13px 26px;font-size:11px;font-weight:800;border-radius:30px;display:none}
+#followBtn.online{background:rgba(34,197,94,0.25) !important;color:#4ade80 !important}
+#followBtn.semconexao{background:rgba(245,158,11,0.25) !important;color:#fbbf24 !important}
+#followBtn.offline{background:rgba(239,68,68,0.25) !important;color:#f87171 !important}
 #box{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:999;padding:16px 22px;text-align:center;font-family:system-ui;min-width:300px;max-width:92vw;border-radius:24px}
-#box a{color:#fff !important;text-decoration:none;display:block;margin-top:6px;font-size:12px;font-weight:800;opacity:0.9}
+#box a{color:#fff !important;text-decoration:none;display:block;margin-top:6px;font-size:12px;font-weight:800}
 #credito{margin-top:8px;font-size:9px;opacity:0.4;color:#fff}
 .car-label{font-size:10px;opacity:0.6;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px}
-#status-big{font-size:22px;font-weight:800;letter-spacing:0.5px;line-height:1}
+#status-big{font-size:22px;font-weight:800}
 #status-big.online{color:#22c55e}
 #status-big.semconexao{color:#f59e0b}
 #status-big.offline{color:#ef4444}
 #status-sub{font-size:11px;opacity:0.7;margin-top:5px}
 .icons-row{display:flex;justify-content:space-around;padding:13px 0;margin-top:12px;border-top:1px solid rgba(255,255,255,0.1);border-bottom:1px solid rgba(255,255,255,0.1)}
 .icon-block{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:70px}
-.icon-block .ico{width:20px;height:20px;opacity:0.85;display:flex;align-items:center;justify-content:center}
 .icon-block .val{font-weight:700;font-size:13px;color:#fff}
-.icon-block .lbl{font-size:9px;opacity:0.55;text-transform:uppercase;letter-spacing:0.8px}
-#actionBtn{margin-top:12px;padding:13px;border-radius:12px;font-size:12px;font-weight:800;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.08);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
-#actionBtn.online{background:rgba(34,197,94,0.2);color:#4ade80;border-color:rgba(34,197,94,0.3)}
-#actionBtn.semconexao{background:rgba(245,158,11,0.2);color:#fbbf24;border-color:rgba(245,158,11,0.3)}
-#actionBtn.offline{background:rgba(239,68,68,0.2);color:#f87171;border-color:rgba(239,68,68,0.3)}
-.leaflet-control-layers{background:rgba(20,20,20,0.45) !important; backdrop-filter:blur(12px) !important; border:1px solid rgba(255,255,255,0.15) !important; border-radius:16px !important; color:#fff !important}
+.icon-block .lbl{font-size:9px;opacity:0.55;text-transform:uppercase}
+#actionBtn{margin-top:12px;padding:13px;border-radius:12px;font-size:12px;font-weight:800;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.08);color:#fff;width:100%}
+#actionBtn.online{background:rgba(34,197,94,0.2);color:#4ade80}
+#actionBtn.semconexao{background:rgba(245,158,11,0.2);color:#fbbf24}
+#actionBtn.offline{background:rgba(239,68,68,0.2);color:#f87171}
 .car-pin{width:26px;height:26px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 10px #000a;position:relative}
 .car-pin.online{background:#3b82f6}
 .car-pin.semconexao{background:#3b82f6}
 .car-pin.offline{background:#666}
-.car-pin.semconexao::before{content:'';position:absolute;inset:-8px;border-radius:50%;border:3px solid #f59e0b;animation:pinPulse 1.5s ease-out infinite}
-@keyframes pinPulse{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(2.5)}}
-.car-label-pin{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:6px;white-space:nowrap;background:#000000cc;color:#fff;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;border:1px solid rgba(255,255,255,0.15)}
+.car-label-pin{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:6px;white-space:nowrap;background:#000000cc;color:#fff;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600}
 </style>
 </head>
 <body>
@@ -70,9 +66,9 @@ html,body{margin:0;height:100%;background:#000}
 <div id="box" class="glass">
   <div><div class="car-label" id="nome">PALIO 1</div><div id="status-big" class="offline">OFFLINE</div><div id="status-sub">Sem conexao</div></div>
   <div class="icons-row">
-    <div class="icon-block"><div class="ico">📶</div><span class="val" id="signal-val">0/4</span><span class="lbl">Sinal</span></div>
-    <div class="icon-block"><div class="ico">🔋</div><span class="val" id="battery-val">--%</span><span class="lbl">Bateria</span></div>
-    <div class="icon-block"><div class="ico">🕒</div><span class="val" id="updated-val">--</span><span class="lbl">Atualizado</span></div>
+    <div class="icon-block"><span class="val" id="signal-val">0/4</span><span class="lbl">Sinal</span></div>
+    <div class="icon-block"><span class="val" id="battery-val">--%</span><span class="lbl">Bateria</span></div>
+    <div class="icon-block"><span class="val" id="updated-val">--</span><span class="lbl">Atualizado</span></div>
   </div>
   <button id="actionBtn" class="offline" onclick="acaoBotao()">📍 <span id="actionBtn-text">VER ÚLTIMO LOCAL</span></button>
   <a id="gmap" href="#" target="_blank">IR PARA O GOOGLE MAPS</a>
@@ -88,47 +84,16 @@ const map = L.map('map',{layers:[sat], zoomControl:false}).setView([-20.3881,-43
 L.control.layers({"🛰️ SATÉLITE": sat, "🗺️ RUA": rua},{},{position:'topleft'}).addTo(map);
 let m=L.marker([-20.3881,-43.7569]).addTo(map);
 let poly=L.polyline([],{color:'#ff0000',weight:3,opacity:0.7});
-function getStatus(lastUpdate){
-  if(!lastUpdate) return 'OFFLINE';
-  const m=(Date.now()-lastUpdate)/60000;
-  if(m<=5) return 'ONLINE';
-  if(m<=60) return 'SEM_CONEXAO';
-  return 'OFFLINE';
-}
-function formatTimeAgo(ms){
-  if(!ms) return '--';
-  const s=Math.floor((Date.now()-ms)/1000);
-  if(s<60) return s+'s';
-  const mm=Math.floor(s/60);
-  if(mm<60) return mm+'min';
-  const h=Math.floor(mm/60);
-  return h+'h '+(mm%60)+'min';
-}
+function getStatus(lastUpdate){ if(!lastUpdate) return 'OFFLINE'; const mm=(Date.now()-lastUpdate)/60000; if(mm<=5) return 'ONLINE'; if(mm<=60) return 'SEM_CONEXAO'; return 'OFFLINE'; }
+function formatTimeAgo(ms){ if(!ms) return '--'; const s=Math.floor((Date.now()-ms)/1000); if(s<60) return s+'s'; const mm=Math.floor(s/60); if(mm<60) return mm+'min'; return Math.floor(mm/60)+'h '+(mm%60)+'min'; }
 function toggleMenu(){menuAberto=!menuAberto;document.getElementById('menu').style.display=menuAberto?'flex':'none';}
 function toggleHist(){verHist=!verHist;if(verHist){poly.addTo(map);document.getElementById('mHist').innerText='👁️ HISTÓRICO: ON';}else{map.removeLayer(poly);document.getElementById('mHist').innerText='🚫 HISTÓRICO: OFF';}}
 map.on('dragstart',()=>{if(seguir){seguir=false;document.getElementById('followBtn').style.display='block';}});
-map.on('click',()=>{if(menuAberto)toggleMenu();});
 function voltar(){seguir=true;primeiro=true;document.getElementById('followBtn').style.display='none';map.flyTo([carData[ATUAL].lat,carData[ATUAL].lng],17,{duration:1.8});}
 function trocar(c){ATUAL=c;document.getElementById('btn1').className=c=='Palio1'?'ativo':'';document.getElementById('btn2').className=c=='Palio2'?'ativo':'';document.getElementById('nome').innerText=c.toUpperCase().replace('PALIO','PALIO ');poly.setLatLngs([]);primeiro=true;seguir=true;document.getElementById('followBtn').style.display='none';up();}
 async function zerar(){if(!confirm(`Zerar histórico do ${ATUAL}?`)) return;let f=ATUAL=='Palio1'?`device_id=in.(Palio1,LG)`:`device_id=eq.${ATUAL}`;await fetch(`${U}/rest/v1/rastreador_historico?${f}`,{method:'DELETE',headers:{apikey:K,Authorization:"Bearer "+K}});poly.setLatLngs([]);}
-function atualizarPino(status){
-  const cls = status.toLowerCase().replace('_','');
-  const icon = L.divIcon({className:'',html:`<div class="car-pin ${cls}"><div class="car-label-pin">${ATUAL=='Palio1'?'PALIO 1':'PALIO 2'}</div></div>`,iconSize:[26,26],iconAnchor:[13,13]});
-  m.setIcon(icon); m.setLatLng([carData[ATUAL].lat,carData[ATUAL].lng]);
-}
-function updateUI(){
-  const data = carData[ATUAL]; const status = getStatus(data.lastUpdate); const cls = status.toLowerCase().replace('_','');
-  document.getElementById('status-big').className = cls;
-  document.getElementById('status-big').innerText = status==='SEM_CONEXAO'?'SEM CONEXÃO':status;
-  document.getElementById('status-sub').innerText = status==='ONLINE'?'Atualizado agora':status==='SEM_CONEXAO'?'Visto há '+formatTimeAgo(data.lastUpdate):'Sem conexão';
-  ['Palio1','Palio2'].forEach(c=>{const s=getStatus(carData[c].lastUpdate); const cl=s.toLowerCase().replace('_',''); document.getElementById('dot-'+c).className='dot '+cl;});
-  document.getElementById('signal-val').innerText = status==='ONLINE'?'4/4':status==='SEM_CONEXAO'?'2/4':'0/4';
-  document.getElementById('battery-val').innerText = (data.battery||0)+'%';
-  document.getElementById('updated-val').innerText = formatTimeAgo(data.lastUpdate);
-  const btn=document.getElementById('actionBtn'); btn.className=cls; document.getElementById('actionBtn-text').innerText = status==='ONLINE'?'VOLTAR AO CARRO':'VER ÚLTIMO LOCAL';
-  document.getElementById('followBtn').className='glass '+cls;
-  atualizarPino(status);
-}
+function atualizarPino(status){const cls=status.toLowerCase().replace('_',''); const icon=L.divIcon({className:'',html:`<div class="car-pin ${cls}"><div class="car-label-pin">${ATUAL=='Palio1'?'PALIO 1':'PALIO 2'}</div></div>`,iconSize:[26,26],iconAnchor:[13,13]}); m.setIcon(icon); m.setLatLng([carData[ATUAL].lat,carData[ATUAL].lng]);}
+function updateUI(){const data=carData[ATUAL]; const status=getStatus(data.lastUpdate); const cls=status.toLowerCase().replace('_',''); document.getElementById('status-big').className=cls; document.getElementById('status-big').innerText=status==='SEM_CONEXAO'?'SEM CONEXÃO':status; document.getElementById('status-sub').innerText=status==='ONLINE'?'Atualizado agora':status==='SEM_CONEXAO'?'Visto há '+formatTimeAgo(data.lastUpdate):'Sem conexão'; ['Palio1','Palio2'].forEach(c=>{const s=getStatus(carData[c].lastUpdate); const cl=s.toLowerCase().replace('_',''); document.getElementById('dot-'+c).className='dot '+cl;}); document.getElementById('signal-val').innerText=status==='ONLINE'?'4/4':status==='SEM_CONEXAO'?'2/4':'0/4'; document.getElementById('battery-val').innerText=(data.battery||0)+'%'; document.getElementById('updated-val').innerText=formatTimeAgo(data.lastUpdate); const btn=document.getElementById('actionBtn'); btn.className=cls; document.getElementById('actionBtn-text').innerText=status==='ONLINE'?'VOLTAR AO CARRO':'VER ÚLTIMO LOCAL'; document.getElementById('followBtn').className='glass '+cls; atualizarPino(status);}
 function acaoBotao(){voltar();}
 async function up(){
   try{
