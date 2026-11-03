@@ -2,48 +2,33 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Rastreador · Transmissão</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}html,body{min-height:100%;background:#0b1220;color:#e2e8f0;font-family:system-ui}body{display:flex;justify-content:center;padding:14px}#app{width:100%;max-width:520px}header{display:flex;gap:10px;align-items:center;margin-bottom:12px}.id{font-size:28px;font-weight:900}.badge{padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;border:1px solid}.badge.ok{background:rgba(34,197,94,.14);color:#4ade80;border-color:rgba(34,197,94,.45)}.badge.err{background:rgba(239,68,68,.14);color:#f87171;border-color:rgba(239,68,68,.45)}.badge.env{background:rgba(59,130,246,.14);color:#60a5fa;border-color:rgba(59,130,246,.45)}.badge.para{background:#152238;color:#94a3b8;border-color:#2a3c60}.cartao{background:#101a30;border:1px solid #1f2d4d;border-radius:14px;padding:12px;margin-bottom:10px}.rotulo{font-size:10.5px;color:#64748b;font-weight:700}.valor{font-size:16px;font-weight:800;margin-top:6px;word-break:break-all}.detalhe{font-size:11.5px;color:#8ea0c4;margin-top:4px}.btn{width:100%;padding:15px;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer}#btnIniciar{background:#22c55e;color:#052e16}#btnIniciar.ativo{background:#1e293b;color:#f87171;border:1px solid #3b1d24}.log{background:#0a1120;border:1px solid #1c2a47;border-radius:12px;padding:10px;font-family:monospace;font-size:11px;max-height:200px;overflow:auto}
-</style>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tracker - Visualização</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>body{margin:0;font-family:system-ui}#map{height:100vh;width:100%}.panel{position:absolute;top:10px;left:10px;z-index:1000;background:#fff;padding:12px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.2);max-width:280px}button{padding:8px 12px;border-radius:8px;border:0;background:#111;color:#fff;cursor:pointer;margin:2px}.badge{padding:2px 8px;border-radius:10px;font-size:11px}.ok{background:#00ff88}.err{background:#ff4444;color:#fff}</style>
 </head>
 <body>
-<main id="app">
-<header><div class="id" id="mostraId">--</div><div class="badge para" id="badgeEnvio">parado</div><a href="index.html" style="margin-left:auto;font-size:12px;color:#7c8db0;text-decoration:none;border:1px solid #2a3c60;padding:6px 11px;border-radius:99px">🗺️ mapa</a></header>
-<div class="cartao"><div class="rotulo">GPS</div><div class="valor" id="gpsVal">aguardando...</div><div class="detalhe" id="gpsAcc">watch ativo</div></div>
-<div class="cartao"><div class="rotulo">BATERIA</div><div class="valor" id="batVal">--</div><div class="detalhe" id="batExtra"></div></div>
-<div class="cartao"><div class="rotulo">ÚLTIMO ENVIO</div><div class="valor" id="envioVal">--</div><div class="detalhe" id="envioDet">parado</div></div>
-<button id="btnIniciar" class="btn">▶ INICIAR</button>
-<div class="log" id="log" style="margin-top:12px"></div>
-</main>
+<div id="map"></div>
+<div class="panel">
+<h3 style="margin:0 0 8px">🚗 Tracker</h3>
+<div>Device: <b id="dev">PALIO2</b> <span id="conn" class="badge err">offline</span></div>
+<div style="margin:6px 0">Último: <span id="last">--</span></div>
+<div style="margin:6px 0">Pontos: <span id="pts">0</span></div>
+<button onclick="loadData()">Atualizar</button>
+<button onclick="center()">Centralizar</button>
+<button onclick="clearTrail()">Limpar trajeto</button>
+<div style="margin-top:8px"><a id="linkR" href="rastreador.html?id=PALIO2" target="_blank">Abrir Rastreador</a></div>
+<div style="font-size:10px;color:#666;margin-top:8px" id="info"></div>
+</div>
 <script>
-var CONFIG = {
-  SUPABASE_URL: 'https://wzjhyoyggthasgjygcvo.supabase.co',
-  SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6amh5b3lnZ3RoYXNnanlnY3ZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjUxMTMsImV4cCI6MjA3ODY0MTExM30.k1af6Xy2MoFihd3wBOaN2vE-EWWv2ewG2y5Gwu1I5yVw',
-  REENVIO_MS: 25000,
-  THROTTLE_GPS_MS: 10000
-};
-var id = new URLSearchParams(location.search).get('id') || 'PALIO2';
-document.getElementById('mostraId').textContent=id;
-function log(m){var d=document.createElement('div');d.textContent=new Date().toLocaleTimeString()+' '+m;document.getElementById('log').prepend(d);}
-function badge(t,txt){var b=document.getElementById('badgeEnvio');b.className='badge '+t;b.textContent=txt;}
-var lastLat=null,lastLon=null,bateria=null,watchId=null,rastreando=false,qtd=0,enviando=false,ultTent=0;
-function enviar(mot){
- if(lastLat==null||enviando) return; enviando=true; ultTent=Date.now(); badge('env','enviando...');
- var corpo={veiculo_id:id, lat:lastLat, lon:lastLon}; if(bateria!=null) corpo.bateria=bateria;
- fetch(CONFIG.SUPABASE_URL+'/rest/v1/posicoes',{method:'POST',headers:{apikey:CONFIG.SUPABASE_KEY,Authorization:'Bearer '+CONFIG.SUPABASE_KEY,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(corpo)})
- .then(r=>{enviando=false; if(r.ok){qtd++;document.getElementById('envioVal').textContent=new Date().toLocaleTimeString();document.getElementById('envioDet').textContent=qtd+' enviados';badge('ok','online ✓');log('✓ enviado '+mot);}else{r.text().then(t=>{badge('err','erro '+r.status);log('✗ HTTP '+r.status+' '+t.slice(0,300));});}})
- .catch(e=>{enviando=false;badge('err','sem conexão');log('✗ fetch: '+e.message);});
-}
-function iniciarGPS(){
- watchId=navigator.geolocation.watchPosition(p=>{lastLat=p.coords.latitude;lastLon=p.coords.longitude;document.getElementById('gpsVal').textContent=lastLat.toFixed(6)+', '+lastLon.toFixed(6);document.getElementById('gpsAcc').textContent='±'+Math.round(p.coords.accuracy)+'m';if(Date.now()-ultTent>=CONFIG.THROTTLE_GPS_MS) enviar('gps');},e=>{document.getElementById('gpsAcc').textContent=e.message;},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
-}
-if(navigator.getBattery){navigator.getBattery().then(b=>{var u=()=>{bateria=Math.round(b.level*100);document.getElementById('batVal').textContent=bateria+'%';};b.addEventListener('levelchange',u);u();});}
-document.getElementById('btnIniciar').addEventListener('click',function(){
- if(!rastreando){rastreando=true;this.textContent='⏹ PARAR';this.classList.add('ativo');iniciarGPS();log('▶ iniciado '+id);setInterval(()=>{if(rastreando&&lastLat!=null) enviar('reenvio 25s');},CONFIG.REENVIO_MS);}else{rastreando=false;this.textContent='▶ INICIAR';this.classList.remove('ativo');if(watchId!=null) navigator.geolocation.clearWatch(watchId);badge('para','parado');log('⏹ parado');}
-});
-log('Pronto. Clique INICIAR. Tem que ficar online ✓');
+var CONFIG={SUPABASE_URL:'https://jpaflbkafupwqfqfcjrv.supabase.co',SUPABASE_KEY:'sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf',DEVICE_ID:'PALIO2'};
+var map=L.map('map').setView([-20.38,-43.75],15);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+var marker=null;var poly=L.polyline([],{color:'red',weight:4}).addTo(map);var lastLatLng=null;
+function logInfo(t){document.getElementById('info').innerText=t;}
+async function loadData(){try{var r=await fetch(CONFIG.SUPABASE_URL+'/rest/v1/posicoes?device_id=eq.'+CONFIG.DEVICE_ID+'&order=created_at.desc&limit=100',{headers:{'apikey':CONFIG.SUPABASE_KEY,'Authorization':'Bearer '+CONFIG.SUPABASE_KEY}});if(!r.ok){logInfo('Erro '+r.status+' '+(await r.text()).slice(0,100));return;}var data=await r.json();if(!data.length){logInfo('Sem dados ainda. Inicie o rastreador.');document.getElementById('conn').textContent='sem dados';return;}document.getElementById('pts').textContent=data.length;document.getElementById('last').textContent=new Date(data[0].created_at).toLocaleTimeString('pt-BR');document.getElementById('conn').textContent='online';document.getElementById('conn').className='badge ok';var latlngs=data.map(d=>[d.lat,d.lng]).reverse();poly.setLatLngs(latlngs);lastLatLng=[data[0].lat,data[0].lng];if(!marker) marker=L.marker(lastLatLng).addTo(map).bindPopup('PALIO2');else marker.setLatLng(lastLatLng);logInfo('OK');}catch(e){logInfo('Failed to fetch '+e.message);document.getElementById('conn').textContent='erro fetch';}}
+function center(){if(lastLatLng) map.setView(lastLatLng,17);}function clearTrail(){poly.setLatLngs([]);}
+loadData();setInterval(loadData,5000);
 </script>
 </body>
 </html>
