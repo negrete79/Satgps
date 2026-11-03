@@ -1,41 +1,14 @@
 {
-  "name": "SatGPS - Frota PRO",
-  "short_name": "SatGPS",
-  "description": "Sistema de rastreamento de frota em tempo real",
+  "name": "Carro GPS",
+  "short_name": "Carro GPS",
   "start_url": "./index.html",
-  "scope": "./",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
-  "orientation": "any",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
-  "lang": "pt-BR",
-  "dir": "ltr",
-  "categories": ["utilities", "productivity", "navigation"],
-  "icons": [
-    {
-      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMwYTBhMGEiLz48cmVjdCB4PSIyMiIgeT0iMjIiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNhNmZmMDAiLz48cmVjdCB4PSI0IiB5PSIyNiIgd2lkdGg9IjE2IiBoZWlnaHQ9IjEyIiByeD0iMiIgZmlsbD0iI2E2ZmYwMCIgb3BhY2l0eT0iMC40Ii8+PHJlY3QgeD0iNDQiIHk9IjI2IiB3aWR0aD0iMTYiIGhlaWdodD0iMTIiIHJ4PSIyIiBmaWxsPSIjYTZmZjAwIiBvcGFjaXR5PSIwLjQiLz48bGluZSB4MT0iMzIiIHkxPSIyMiIgeDI9IjMyIiB5Mj0iMTAiIHN0cm9rZT0iI2E2ZmYwMCIgc3Ryb2tlLXdpZHRoPSIyLjUiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjkiIHI9IjMiIGZpbGw9IiNhNmZmMDAiLz48L3N2Zz4=",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMwYTBhMGEiLz48cmVjdCB4PSIyMiIgeT0iMjIiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNhNmZmMDAiLz48cmVjdCB4PSI0IiB5PSIyNiIgd2lkdGg9IjE2IiBoZWlnaHQ9IjEyIiByeD0iMiIgZmlsbD0iI2E2ZmYwMCIgb3BhY2l0eT0iMC40Ii8+PHJlY3QgeD0iNDQiIHk9IjI2IiB3aWR0aD0iMTYiIGhlaWdodD0iMTIiIHJ4PSIyIiBmaWxsPSIjYTZmZjAwIiBvcGFjaXR5PSIwLjQiLz48bGluZSB4MT0iMzIiIHkxPSIyMiIgeDI9IjMyIiB5Mj0iMTAiIHN0cm9rZT0iI2E2ZmYwMCIgc3Ryb2tlLXdpZHRoPSIyLjUiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjkiIHI9IjMiIGZpbGw9IiNhNmZmMDAiLz48L3N2Zz4=",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    },
-    {
-      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMwYTBhMGEiLz48cmVjdCB4PSIyMiIgeT0iMjIiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNhNmZmMDAiLz48cmVjdCB4PSI0IiB5PSIyNiIgd2lkdGg9IjE2IiBoZWlnaHQ9IjEyIiByeD0iMiIgZmlsbD0iI2E2ZmYwMCIgb3BhY2l0eT0iMC40Ii8+PHJlY3QgeD0iNDQiIHk9IjI2IiB3aWR0aD0iMTYiIGhlaWdodD0iMTIiIHJ4PSIyIiBmaWxsPSIjYTZmZjAwIiBvcGFjaXR5PSIwLjQiLz48bGluZSB4MT0iMzIiIHkxPSIyMiIgeDI9IjMyIiB5Mj0iMTAiIHN0cm9rZT0iI2E2ZmYwMCIgc3Ryb2tlLXdpZHRoPSIyLjUiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjkiIHI9IjMiIGZpbGw9IiNhNmZmMDAiLz48L3N2Zz4=",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMwYTBhMGEiLz48cmVjdCB4PSIyMiIgeT0iMjIiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgcng9IjMiIGZpbGw9IiNhNmZmMDAiLz48cmVjdCB4PSI0IiB5PSIyNiIgd2lkdGg9IjE2IiBoZWlnaHQ9IjEyIiByeD0iMiIgZmlsbD0iI2E2ZmYwMCIgb3BhY2l0eT0iMC40Ii8+PHJlY3QgeD0iNDQiIHk9IjI2IiB3aWR0aD0iMTYiIGhlaWdodD0iMTIiIHJ4PSIyIiBmaWxsPSIjYTZmZjAwIiBvcGFjaXR5PSIwLjQiLz48bGluZSB4MT0iMzIiIHkxPSIyMiIgeDI9IjMyIiB5Mj0iMTAiIHN0cm9rZT0iI2E2ZmYwMCIgc3Ryb2tlLXdpZHRoPSIyLjUiLz48Y2lyY2xlIGN4PSIzMiIgY3k9IjkiIHI9IjMiIGZpbGw9IiNhNmZmMDAiLz48L3N2Zz4=",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    }
-  ]
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [{
+    "src": "https://cdn-icons-png.flaticon.com/512/3774/3774083.png",
+    "sizes": "512x512",
+    "type": "image/png",
+    "purpose": "any maskable"
+  }]
 }
