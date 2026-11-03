@@ -6,7 +6,7 @@
 <title>Carro GPS</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link rel="manifest" href="manifest.json?v=8">
+<link rel="manifest" href="manifest.json?v=11">
 <meta name="theme-color" content="#000000">
 <style>
 html,body{margin:0;height:100%;background:#000}
@@ -29,8 +29,8 @@ html,body{margin:0;height:100%;background:#000}
 <body>
 <div id="map"></div>
 <div id="selector" class="glass">
-<button id="btn1" class="ativo" onclick="trocar('Palio1')">PALIO 1</button>
-<button id="btn2" onclick="trocar('Palio2')">PALIO 2</button>
+<button id="btn1" class="ativo" onclick="trocar('PALIO1')">PALIO 1</button>
+<button id="btn2" onclick="trocar('PALIO2')">PALIO 2</button>
 </div>
 <div id="menuBtn" class="glass" onclick="toggleMenu()">⋮</div>
 <div id="menu" class="glass">
@@ -50,7 +50,7 @@ html,body{margin:0;height:100%;background:#000}
 </div>
 <script>
 const U="https://jpaflbkafupwqfqfcjrv.supabase.co", K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
-let ATUAL="Palio1", seguir=true, primeiro=true, verHist=false, menuAberto=false;
+let ATUAL="PALIO1", seguir=true, primeiro=true, verHist=false, menuAberto=false;
 const sat = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{maxZoom:20});
 const rua = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{maxZoom:20});
 const map = L.map('map',{layers:[sat], zoomControl:false}).setView([-20.3881,-43.7569],17);
@@ -62,11 +62,11 @@ function toggleHist(){verHist=!verHist;if(verHist){poly.addTo(map);document.getE
 map.on('dragstart',()=>{if(seguir){seguir=false;document.getElementById('followBtn').style.display='block';}});
 map.on('click',()=>{if(menuAberto)toggleMenu();});
 function voltar(){seguir=true;primeiro=true;document.getElementById('followBtn').style.display='none';map.flyTo(m.getLatLng(),17,{duration:1.8});}
-function trocar(c){ATUAL=c;document.getElementById('btn1').className=c=='Palio1'?'ativo':'';document.getElementById('btn2').className=c=='Palio2'?'ativo':'';document.getElementById('nome').innerText=c.toUpperCase();poly.setLatLngs([]);primeiro=true;seguir=true;document.getElementById('followBtn').style.display='none';up()}
-async function zerar(){if(!confirm(`Zerar histórico do ${ATUAL}?`)) return;let f=ATUAL=='Palio1'?`device_id=in.(Palio1,LG)`:`device_id=eq.${ATUAL}`;await fetch(`${U}/rest/v1/rastreador_historico?${f}`,{method:'DELETE',headers:{apikey:K,Authorization:"Bearer "+K}});poly.setLatLngs([]);document.getElementById('qtd').innerText='0';}
+function trocar(c){ATUAL=c;document.getElementById('btn1').className=c=='PALIO1'?'ativo':'';document.getElementById('btn2').className=c=='PALIO2'?'ativo':'';document.getElementById('nome').innerText=c;poly.setLatLngs([]);primeiro=true;seguir=true;document.getElementById('followBtn').style.display='none';up()}
+async function zerar(){if(!confirm(`Zerar histórico do ${ATUAL}?`)) return;let f=ATUAL=='PALIO1'?`device_id=in.(PALIO1)`:`device_id=eq.${ATUAL}`;await fetch(`${U}/rest/v1/rastreador_historico?${f}`,{method:'DELETE',headers:{apikey:K,Authorization:"Bearer "+K}});poly.setLatLngs([]);document.getElementById('qtd').innerText='0';}
 function tempoAtras(iso){ if(!iso) return '--'; let diff = (Date.now() - new Date(iso).getTime())/1000; if(diff < 60) return 'agora'; if(diff < 3600) return Math.floor(diff/60)+' min atrás'; if(diff < 86400) return Math.floor(diff/3600)+'h atrás'; return Math.floor(diff/86400)+'d atrás';}
 async function up(){
-  let ids=ATUAL=='Palio1'?`device_id=in.(Palio1,LG)`:`device_id=eq.${ATUAL}`;
+  let ids=ATUAL=='PALIO1'?`device_id=in.(PALIO1,LG)`:`device_id=eq.${ATUAL}`;
   try{
     let r=await fetch(`${U}/rest/v1/rastreador?${ids}&order=updated_at.desc&limit=1`,{headers:{apikey:K,Authorization:"Bearer "+K},cache:'no-store'});
     let d=await r.json(); if(!d[0]) { document.getElementById('status').innerText='● OFFLINE'; document.getElementById('status').className='offline'; return;}
@@ -86,7 +86,7 @@ async function up(){
   }catch(e){}
 }
 setTimeout(()=>map.invalidateSize(),500);up();setInterval(up,10000);
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=8');}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=11');}
 </script>
 </body>
 </html>
