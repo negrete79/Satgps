@@ -1,14 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Rastreador</title>
+<style>
+html,body{margin:0;height:100%;background:#000;color:#fff;font-family:system-ui;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center}
+#b{font-size:80px}
+#t{padding:20px;font-size:18px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="b">🔴</div>
+<div id="t">TOQUE NA TELA<br>PARA INICIAR</div>
+<audio id="rd" preload="none" src="https://stream-150.zeno.fm/0r0xa9mf2d8uv?zs=u5iZss9ZQO6_TAweA5B98w"></audio>
 <script>
-// ... mesma parte de cima ...
-  const enviar=async(lat,lon,forcar=false)=>{
-    if(!forcar && Date.now()-ultimo<25000)return; // 25s
-    ultimo=Date.now();clima(lat,lon);
-    document.getElementById('temp').innerText=`${DEVICE_ID} ${BAT}% | ${new Date().toLocaleTimeString('pt-BR')} | RÁDIO ON | ${lat.toFixed(5)}`;
-    await fetch(`${U}/rest/v1/rastreador`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify({device_id:DEVICE_ID,lat:lat,lng:lon,battery:BAT,updated_at:new Date().toISOString()})});
-    await fetch(`${U}/rest/v1/rastreador_historico`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json"},body:JSON.stringify({device_id:DEVICE_ID,lat:lat,lng:lon,battery:BAT})}).catch(()=>{});
-  };
-  const pega = () => navigator.geolocation.getCurrentPosition(p=>enviar(p.coords.latitude,p.coords.longitude,true),null,{enableHighAccuracy:true});
-  pega();
-  navigator.geolocation.watchPosition(p=>enviar(p.coords.latitude,p.coords.longitude,false),null,{enableHighAccuracy:true,maximumAge:0});
-  setInterval(pega, 25000); // manda mesmo parado a cada 25s
+const DEVICE_ID=new URLSearchParams(location.search).get('id')||'PALIO1';
+const U="https://jpaflbkafupwqfqfcjrv.supabase.co";
+const K="sb_publishable_qek2mggF5M47pKggbM42tQ_WTFnOOxf";
+let BAT=100;
+const ic=document.getElementById('b');
+const tx=document.getElementById('t');
+const ad=document.getElementById('rd');
+if(navigator.getBattery){navigator.getBattery().then(b=>{BAT=Math.round(b.level*100);b.onlevelchange=()=>BAT=Math.round(b.level*100);});}
+let ultimo=0;
+const enviar=async(lat,lon,forcar)=>{
+ if(!forcar && Date.now()-ultimo<25000) return;
+ ultimo=Date.now();
+ tx.innerHTML=`${DEVICE_ID} ${BAT}%<br>${new Date().toLocaleTimeString('pt-BR')}<br>📻 RÁDIO ON<br>${lat.toFixed(5)}, ${lon.toFixed(5)}<br>ENVIANDO...`;
+ try{
+  await fetch(`${U}/rest/v1/rastreador`,{method:"POST",headers:{apikey:K,Authorization:"Bearer "+K,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates"},body:JSON.stringify({device_id:DEVICE_ID,lat:lat,lng:lon,battery:BAT,updated_at:new Date().toISOString()})});
+  tx.innerHTML=`${DEVICE_ID} ${BAT}%<br>${new Date().toLocaleTimeString('pt-BR')}<br>📻 RÁDIO ON<br>${lat.toFixed(5)}, ${lon.toFixed(5)}<br>✅ ENVIADO`;
+ }catch(e){ tx.innerHTML=`ERRO AO ENVIAR`; }
+};
+const pega=()=>{ navigator.geolocation.getCurrentPosition(p=>enviar(p.coords.latitude,p.coords.longitude,true),e=>{tx.innerHTML=`ATIVE O GPS<br>${e.message}`},{enableHighAccuracy:true,timeout:15000}); };
+document.body.addEventListener('click',async()=>{
+ try{ await ad.play(); }catch(e){}
+ ic.innerText='🟢';
+ tx.innerHTML=`${DEVICE_ID} INICIADO<br>BUSCANDO GPS...`;
+ pega();
+ navigator.geolocation.watchPosition(p=>enviar(p.coords.latitude,p.coords.longitude,false),null,{enableHighAccuracy:true,maximumAge:0});
+ setInterval(pega,25000);
+},{once:true});
 </script>
+</body>
+</html>
